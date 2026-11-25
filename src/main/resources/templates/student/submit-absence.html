@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Submit Absence Request')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('absence')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-7">
+                    <div class="card shadow-sm border-0" style="border-radius: 16px;">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h4 class="fw-bold text-dark mb-1">
+                                <i class="bi bi-file-earmark-plus text-primary me-2"></i>Submit Absence / Medical Request
+                            </h4>
+                            <p class="text-muted small mb-0">Institute of Technology, University of Moratuwa</p>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <form th:action="@{/student/absence-requests}" th:object="${requestDto}" method="post" enctype="multipart/form-data">
+                                <!-- Auto-populated Student Details -->
+                                <div class="p-3 bg-light rounded-3 mb-4 border">
+                                    <div class="row g-2 small">
+                                        <div class="col-sm-6">
+                                            <span class="text-muted">Student Name:</span>
+                                            <strong class="text-dark d-block" th:text="${student.fullName}">Alex Morgan</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted">Student ID:</span>
+                                            <strong class="text-dark d-block" th:text="${student.studentIdNumber}">STU-2024-001</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted">Department:</span>
+                                            <span class="text-dark d-block" th:text="${student.department}">Computer Science</span>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted">Academic Year:</span>
+                                            <span class="text-dark d-block" th:text="${student.academicYear}">Year 2</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Subject Selection -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Subject <span class="text-danger">*</span></label>
+                                    <select class="form-select" th:field="*{subjectId}" required>
+                                        <option value="">-- Select Enrolled Subject --</option>
+                                        <option th:each="sub : ${subjects}" th:value="${sub.id}"
+                                                th:text="${sub.code} + ' - ' + ${sub.name}">CS101 - Algorithms</option>
+                                    </select>
+                                </div>
+
+                                <!-- Class Session (Optional) -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Relevant Class Session (Optional)</label>
+                                    <select class="form-select" th:field="*{sessionId}">
+                                        <option value="">-- General / Multi-day Absence --</option>
+                                        <option th:each="s : ${sessions}" th:value="${s.id}"
+                                                th:text="${s.subject.code} + ' - ' + ${s.sessionName} + ' (' + ${s.sessionDate} + ')'">Lecture 1</option>
+                                    </select>
+                                </div>
+
+                                <!-- Reason Category (8 official categories) -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Reason Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" th:field="*{reasonCategory}" required>
+                                        <option value="">-- Select Reason Category --</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat}"
+                                                th:text="${cat.displayName}">Medical / Illness</option>
+                                    </select>
+                                </div>
+
+                                <!-- Date Range -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold text-dark">Start Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" th:field="*{startDate}" required>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold text-dark">End Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" th:field="*{endDate}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Detailed Explanation -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Detailed Explanation <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" th:field="*{explanation}" rows="4"
+                                              placeholder="Provide full context for your absence, e.g. physician diagnosis, event details, or specific circumstances..." required></textarea>
+                                </div>
+
+                                <!-- Supporting Document Upload -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-dark">
+                                        Supporting Document
+                                        <span th:if="${isDocMandatory}" class="text-danger">* (Mandatory)</span>
+                                        <span th:if="${!isDocMandatory}" class="text-muted fw-normal">(Optional unless required by lecturer)</span>
+                                    </label>
+                                    <input type="file" class="form-control" name="document" accept=".pdf,.jpg,.jpeg,.png"
+                                           th:required="${isDocMandatory}">
+                                    <small class="form-text text-muted">
+                                        Accepted formats: <strong>PDF, JPG, PNG</strong> (Max size: 10 MB). Stored securely outside public access.
+                                    </small>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                                    <a th:href="@{/student/absence-requests}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-5">Submit Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

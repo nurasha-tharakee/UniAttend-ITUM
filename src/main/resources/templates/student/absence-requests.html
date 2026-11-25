@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Absence & Medical Requests')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('absence')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-file-earmark-medical text-primary me-2"></i>Absence & Medical Requests
+                    </h3>
+                    <p class="text-muted small mb-0">Submit medical certificates and official duty leaves for review</p>
+                </div>
+                <div>
+                    <a th:href="@{/student/absence-requests/new}" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span class="fw-bold">Submit New Request</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Requests Table -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark"><i class="bi bi-clock-history me-2 text-primary"></i>My Submission History</span>
+                    <span class="badge bg-light text-dark border" th:text="${requests.size()} + ' Total Requests'">0 Total</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Subject</th>
+                                    <th>Reason Category</th>
+                                    <th>Date(s)</th>
+                                    <th>Attachment</th>
+                                    <th>Status</th>
+                                    <th>Lecturer Review Comments</th>
+                                    <th>Submitted At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="req, iter : ${requests}">
+                                    <td class="text-muted small" th:text="${iter.count}">1</td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold"
+                                              th:text="${req.subject.code}">CS101</span>
+                                        <div class="small text-muted" th:text="${req.subject.name}">Subject Name</div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold text-dark" th:text="${req.reasonCategory.displayName}">Medical / Illness</span>
+                                        <div class="small text-muted text-truncate" style="max-width: 200px;" th:text="${req.explanation}">Explanation</div>
+                                    </td>
+                                    <td class="small">
+                                        <span th:text="${req.startDate}">2024-05-10</span>
+                                        <span th:if="${req.startDate != req.endDate}"> to <span th:text="${req.endDate}">2024-05-12</span></span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${req.attachmentPath != null}" th:href="@{/student/absence-requests/{id}/attachment(id=${req.id})}"
+                                           class="btn btn-sm btn-outline-secondary rounded-pill" target="_blank" title="Download Document">
+                                            <i class="bi bi-paperclip me-1"></i>
+                                            <span th:text="${req.attachmentOriginalName != null ? req.attachmentOriginalName : 'Document'}">File</span>
+                                        </a>
+                                        <span th:if="${req.attachmentPath == null}" class="text-muted small">No file</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${req.status.name() == 'APPROVED'} ? 'bg-success' : (${req.status.name() == 'PENDING'} ? 'bg-warning text-dark' : (${req.status.name() == 'NEEDS_CLARIFICATION'} ? 'bg-info text-dark' : 'bg-danger'))"
+                                              th:text="${req.status.displayName}">PENDING</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${req.reviewComments != null and !#strings.isEmpty(req.reviewComments)}"
+                                              class="text-dark small" th:text="${req.reviewComments}">Comments</span>
+                                        <span th:if="${req.reviewComments == null or #strings.isEmpty(req.reviewComments)}"
+                                              class="text-muted small fst-italic">No feedback yet</span>
+                                        <div th:if="${req.reviewedBy != null}" class="text-muted" style="font-size: 0.75rem;">
+                                            By <span th:text="${req.reviewedBy}">dr.smith</span>
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted" th:text="${#temporals.format(req.createdAt, 'dd MMM yyyy, hh:mm a')}">10 May 2024</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(requests)}">
+                                    <td colspan="8" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                        No absence requests submitted yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

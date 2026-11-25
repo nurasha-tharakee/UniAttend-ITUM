@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: header('Scan QR Attendance')}"></head>
+
+<body>
+
+    <div class="app-wrapper">
+        <div th:replace="~{fragments/layout :: sidebar('scan')}"></div>
+
+        <div class="main-content">
+            <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <!-- HTTPS reminder: shown only over HTTP -->
+            <div id="httpsWarningBanner" class="alert alert-warning d-flex align-items-start gap-2 mb-3" style="display:none!important">
+                <i class="bi bi-shield-exclamation fs-5 mt-1"></i>
+                <div>
+                    <strong>Switch to HTTPS for camera access.</strong>
+                    Mobile browsers block camera &amp; GPS on plain HTTP.<br>
+                    Open <code>https://172.20.10.2:8443/student/scan</code> on your phone.
+                    If you see a certificate warning tap <em>Advanced → Proceed</em>.
+                </div>
+            </div>
+            <script>
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                    document.getElementById('httpsWarningBanner').style.removeProperty('display');
+                }
+            </script>
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="card shadow-sm border-0" style="border-radius: 18px;">
+                        <div class="card-header bg-white text-center py-3">
+                            <h4 class="fw-bold text-dark mb-1">
+                                <i class="bi bi-camera-fill text-primary me-2"></i>Scan Class QR Code
+                            </h4>
+                            <p class="text-muted small mb-0">Point your camera at the lecturer's projector screen</p>
+                        </div>
+
+                            <div class="card-body p-4 text-center">
+                                <!-- Scanner Viewport Container -->
+                                <div id="scannerSection">
+                                    <style>
+                                        #reader video {
+                                            width: 100% !important;
+                                            height: auto !important;
+                                            border-radius: 14px;
+                                            object-fit: cover;
+                                        }
+                                    </style>
+                                    <div id="reader"
+                                        style="width: 100%; min-height: 280px; background-color: #111827; border-radius: 16px; overflow: hidden; position: relative;">
+                                        <div id="cameraIdlePlaceholder"
+                                            class="p-4 text-white text-center d-flex flex-column align-items-center justify-content-center"
+                                            style="min-height: 280px;">
+                                            <i class="bi bi-qr-code-scan text-primary" style="font-size: 3.25rem;"></i>
+                                            <p class="mt-3 mb-1 fw-semibold">Ready to Scan Class QR Code</p>
+                                            <p class="small text-white-50 mb-3">Tap <strong>Start Camera</strong> to grant camera permission and begin scanning.</p>
+                                            <button type="button" class="btn btn-primary rounded-pill px-4 py-2"
+                                                onclick="startCamera()">
+                                                <i class="bi bi-camera-video-fill me-2"></i> Start Camera
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Camera Status Label -->
+                                    <div id="cameraStatusText" class="small text-muted mt-2">
+                                        Camera idle — click <strong>Start Camera</strong> or upload a QR image.
+                                    </div>
+
+                                    <!-- Camera / File Controls -->
+                                    <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                                        <button type="button" class="btn btn-primary btn-sm rounded-pill px-3"
+                                            id="btnStartCamera" onclick="startCamera()">
+                                            <i class="bi bi-camera-video me-1"></i> Start Camera
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                                            id="btnToggleCamera" onclick="switchCamera()" disabled>
+                                            <i class="bi bi-arrow-repeat me-1"></i> Flip Camera
+                                        </button>
+                                        <label class="btn btn-outline-primary btn-sm rounded-pill px-3 mb-0"
+                                            for="qrFileInput">
+                                            <i class="bi bi-image me-1"></i> Scan From Image
+                                        </label>
+                                        <input type="file" id="qrFileInput" accept="image/*" style="display: none;"
+                                            onchange="scanFromFile(this)">
+                                    </div>
+
+                                    <div class="mt-4 p-3 bg-light rounded-3 text-start small text-muted">
+                                        <div class="fw-semibold text-dark mb-1"><i
+                                                class="bi bi-shield-check text-primary me-1"></i>Attendance
+                                            Verification:</div>
+                                        <ul class="mb-0 ps-3">
+                                            <li>QR codes are dynamically generated and expire in <strong>2
+                                                    minutes</strong>.</li>
+                                            <li>You must be enrolled in the subject to mark attendance.</li>
+                                            <li>Duplicate attendance for the same session is blocked.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Processing State -->
+                                <div id="processingSection" style="display: none;" class="py-5">
+                                    <div class="spinner-border text-primary mb-3" style="width: 3.5rem; height: 3.5rem;"
+                                        role="status">
+                                        <span class="visually-hidden">Verifying...</span>
+                                    </div>
+                                    <h5 class="fw-bold text-dark">Validating QR Code...</h5>
+                                    <p class="text-muted small">Checking token expiration and student enrollment</p>
+                                </div>
+
+                                <!-- Success Result Card -->
+                                <div id="successSection" style="display: none;" class="py-4">
+                                    <div class="d-inline-flex p-3 rounded-circle bg-success-subtle text-success mb-3">
+                                        <i class="bi bi-check-circle-fill" style="font-size: 3.5rem;"></i>
+                                    </div>
+                                    <h4 class="fw-bold text-success mb-1">Attendance Marked!</h4>
+                                    <p class="text-muted small mb-3" id="successMessage">Verified successfully</p>
+
+                                    <div class="card bg-light border text-start p-3 mb-4 rounded-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted small">Course:</span>
+                                            <strong class="text-dark" id="resSubjectCode">CS101</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted small">Subject Name:</span>
+                                            <span class="fw-semibold text-dark" id="resSubjectName">Algorithms</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted small">Class Session:</span>
+                                            <span class="text-dark" id="resSessionName">Lecture 1</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted small">Time Recorded:</span>
+                                            <span class="text-dark" id="resMarkedAt">10:00 AM</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between pt-2 border-top">
+                                            <span class="text-muted small">Subject Attendance:</span>
+                                            <strong class="text-success" id="resPercentage">100%</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-primary w-50 rounded-pill py-2"
+                                            onclick="restartScanner()">
+                                            <i class="bi bi-camera me-1"></i> Scan Another
+                                        </button>
+                                        <a th:href="@{/student/dashboard}"
+                                            class="btn btn-primary w-50 rounded-pill py-2">
+                                            <i class="bi bi-grid-1x2 me-1"></i> Dashboard
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Error Result Card -->
+                                <div id="errorSection" style="display: none;" class="py-4">
+                                    <div class="d-inline-flex p-3 rounded-circle bg-danger-subtle text-danger mb-3">
+                                        <i class="bi bi-x-circle-fill" style="font-size: 3.5rem;"></i>
+                                    </div>
+                                    <h4 class="fw-bold text-danger mb-1">Attendance Rejected</h4>
+                                    <p class="text-muted small mb-4" id="errorMessageText">The QR code could not be
+                                        validated.</p>
+
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-primary w-100 rounded-pill py-2"
+                                            onclick="restartScanner()">
+                                            <i class="bi bi-arrow-repeat me-1"></i> Try Again
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: scripts}"></div>
+
+<!-- HTML5 QR Code Scanner Library (local static asset for reliable offline/LAN loading) -->
+<script th:src="@{/js/html5-qrcode.min.js}"></script>
+
+<script th:inline="javascript">
+    // =====================================================================
+    // UniAttend – QR Scanner & GPS Attendance
+    // Requires HTTPS secure context for camera + GPS on all browsers.
+    // =====================================================================
+    'use strict';
+
+    let html5QrCode = null;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+    let isProcessing = false;
+    let cameraStarted = false;
+    let isStartingCamera = false;
+
+    const prefilledToken = /*[[${prefilledToken}]]*/ '';
+
+    const csrfMeta    = document.querySelector('meta[name="_csrf"]');
+    const csrfHdrMeta = document.querySelector('meta[name="_csrf_header"]');
+    const csrfToken   = csrfMeta  ? csrfMeta.getAttribute('content')    : '';
+    const csrfHeader  = csrfHdrMeta ? csrfHdrMeta.getAttribute('content') : 'X-CSRF-TOKEN';
+
+    function setCameraStatus(text, isError = false) {
+        const el = document.getElementById('cameraStatusText');
+        if (!el) return;
+        el.textContent = text;
+        el.className = isError ? 'small text-danger mt-2 fw-semibold' : 'small text-muted mt-2';
+    }
+
+    function updateCameraButtons() {
+        const btnStart = document.getElementById('btnStartCamera');
+        const btnFlip  = document.getElementById('btnToggleCamera');
+        if (btnStart) {
+            btnStart.innerHTML = cameraStarted
+                ? '<i class="bi bi-arrow-clockwise me-1"></i> Restart Camera'
+                : '<i class="bi bi-camera-video me-1"></i> Start Camera';
+            btnStart.disabled = isStartingCamera;
+        }
+        if (btnFlip) {
+            btnFlip.disabled = !cameraStarted || availableCameras.length <= 1;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Secure-context & mediaDevices guard
+    // ------------------------------------------------------------------
+    function checkSecureContext() {
+        return window.isSecureContext === true;
+    }
+
+    function showCameraError(title, detail, extraHtml) {
+        const html = `
+            <div class="p-4 text-white text-center d-flex flex-column align-items-center justify-content-center" style="min-height:280px">
+                <i class="bi bi-camera-video-off" style="font-size:3rem;color:#ffc107"></i>
+                <p class="mt-3 mb-1 fw-semibold">${title}</p>
+                <p class="small mb-2 text-white-50">${detail}</p>
+                ${extraHtml || ''}
+                <button type="button" id="btnRetryCamera" class="btn btn-warning btn-sm rounded-pill px-4 mt-3 fw-semibold" onclick="startCamera()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Retry Camera
+                </button>
+            </div>`;
+        document.getElementById('reader').innerHTML = html;
+        updateCameraButtons();
+    }
+
+    // ------------------------------------------------------------------
+    // Release any active camera / MediaStream tracks cleanly
+    // ------------------------------------------------------------------
+    async function releaseCameraStreams() {
+        if (html5QrCode && cameraStarted) {
+            try {
+                await html5QrCode.stop();
+            } catch (_) {}
+            try {
+                html5QrCode.clear();
+            } catch (_) {}
+        }
+        cameraStarted = false;
+
+        // Also stop any leftover video element MediaStream tracks inside #reader
+        const videos = document.querySelectorAll('#reader video');
+        videos.forEach(video => {
+            if (video.srcObject && typeof video.srcObject.getTracks === 'function') {
+                video.srcObject.getTracks().forEach(track => {
+                    try { track.stop(); } catch (_) {}
+                });
+                video.srcObject = null;
+            }
+        });
+        updateCameraButtons();
+    }
+
+    // ------------------------------------------------------------------
+    // Detect all available cameras (supports laptops, iPhones, Androids)
+    // ------------------------------------------------------------------
+    async function detectCameras() {
+        let cameras = [];
+        if (typeof Html5Qrcode !== 'undefined' && typeof Html5Qrcode.getCameras === 'function') {
+            cameras = await Html5Qrcode.getCameras();
+        }
+        if ((!cameras || cameras.length === 0) && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            cameras = devices
+                .filter(d => d.kind === 'videoinput')
+                .map((d, idx) => ({ id: d.deviceId, label: d.label || `Camera ${idx + 1}` }));
+        }
+        return cameras || [];
+    }
+
+    function pickPreferredCameraIndex(cameras) {
+        if (!cameras || cameras.length === 0) return 0;
+        // Prefer rear/back camera on phones when available; otherwise fall back to first camera (laptop webcam)
+        const rearIdx = cameras.findIndex(cam => /back|rear|environment/i.test(cam.label || ''));
+        return rearIdx >= 0 ? rearIdx : 0;
+    }
+
+    // ------------------------------------------------------------------
+    // Start / Retry Camera (triggered by user click)
+    // ------------------------------------------------------------------
+    async function startCamera(explicitIndex = null) {
+        if (isStartingCamera || isProcessing) return;
+        isStartingCamera = true;
+        updateCameraButtons();
+
+        try {
+            // 1. Check QR library
+            if (typeof Html5Qrcode === 'undefined') {
+                showCameraError(
+                    'QR Scanner Library Missing',
+                    'Html5Qrcode failed to load. Please reload the page.'
+                );
+                setCameraStatus('QR library not loaded.', true);
+                return;
+            }
+
+            // 2. Check window.isSecureContext
+            if (!checkSecureContext()) {
+                showCameraError(
+                    '🔒 HTTPS Secure Context Required',
+                    `window.isSecureContext is ${window.isSecureContext}. Camera &amp; GPS require a trusted HTTPS connection.`,
+                    `<div class="mt-2 p-2 rounded" style="background:rgba(255,193,7,0.15);border:1px solid #ffc107;font-size:0.8rem;text-align:left">
+                        Open <code>https://172.20.10.2:8443/student/scan</code> and trust the UniAttend Root CA certificate.
+                    </div>`
+                );
+                setCameraStatus('Insecure context — HTTPS required.', true);
+                return;
+            }
+
+            // 3. Check navigator.mediaDevices
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showCameraError(
+                    '📷 Camera API Unavailable',
+                    'navigator.mediaDevices.getUserMedia is not available in this browser.',
+                    `<p class="small text-white-50 mb-0">Use <strong>Scan From Image</strong> below, or open in Safari/Chrome over HTTPS.</p>`
+                );
+                setCameraStatus('navigator.mediaDevices unavailable.', true);
+                return;
+            }
+
+            setCameraStatus('Requesting camera permission...');
+
+            // 4. Release any previous streams before starting
+            await releaseCameraStreams();
+
+            // 5. Request permission first so camera labels & deviceIds are unlocked on all browsers
+            const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            tempStream.getTracks().forEach(track => track.stop());
+
+            // 6. Enumerate all available cameras
+            availableCameras = await detectCameras();
+            if (!availableCameras || availableCameras.length === 0) {
+                const err = new Error('No video input devices were found on this device.');
+                err.name = 'NotFoundError';
+                throw err;
+            }
+
+            if (explicitIndex !== null && explicitIndex >= 0 && explicitIndex < availableCameras.length) {
+                currentCameraIndex = explicitIndex;
+            } else {
+                currentCameraIndex = pickPreferredCameraIndex(availableCameras);
+            }
+
+            const selectedCamera = availableCameras[currentCameraIndex];
+            const readerEl = document.getElementById('reader');
+            readerEl.innerHTML = '';
+
+            html5QrCode = new Html5Qrcode('reader');
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 240, height: 240 },
+                aspectRatio: 1.0
+            };
+
+            setCameraStatus(`Starting ${selectedCamera.label || 'camera'}...`);
+
+            try {
+                // Start using the detected deviceId (never forces rear camera on laptops)
+                await html5QrCode.start(
+                    selectedCamera.id,
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+            } catch (primaryErr) {
+                // Fallback: try generic video constraints if specific deviceId failed
+                console.warn('Primary camera start failed, trying fallback:', primaryErr);
+                await releaseCameraStreams();
+                html5QrCode = new Html5Qrcode('reader');
+                await html5QrCode.start(
+                    { facingMode: 'user' },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+            }
+
+            cameraStarted = true;
+            setCameraStatus(`Active: ${selectedCamera.label || 'Camera ' + (currentCameraIndex + 1)} (${availableCameras.length} detected)`);
+        } catch (err) {
+            cameraStarted = false;
+            console.error('Camera start error:', err);
+
+            const errName = (err && err.name) ? err.name : 'Error';
+            const errMsg  = (err && err.message) ? err.message : String(err || 'Unknown camera error');
+
+            let title  = `📷 Camera Error (${errName})`;
+            let detail = errMsg;
+            let extra  = '';
+
+            if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+                title  = `🚫 Camera Permission Denied (${errName})`;
+                detail = `${errMsg}. Allow camera access in your browser site settings, then tap Retry Camera.`;
+            } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+                title  = `📷 No Camera Found (${errName})`;
+                detail = `${errMsg}. Connect a webcam or use "Scan From Image" below.`;
+            } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+                title  = `📷 Camera In Use (${errName})`;
+                detail = `${errMsg}. Close other apps using the camera (Zoom/Teams/Camera app) and tap Retry Camera.`;
+            } else if (errName === 'OverconstrainedError' || errName === 'ConstraintNotSatisfiedError') {
+                title  = `⚙️ Camera Constraint Error (${errName})`;
+                detail = `${errMsg}. Tap Retry Camera to fall back to the default camera.`;
+            }
+
+            extra = `<p class="small mt-2 mb-0 text-white-50">You can also use <strong>Scan From Image</strong> below.</p>`;
+            showCameraError(title, detail, extra);
+            setCameraStatus(`${errName}: ${errMsg}`, true);
+        } finally {
+            isStartingCamera = false;
+            updateCameraButtons();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Flip Camera (cycles through detected cameras)
+    // ------------------------------------------------------------------
+    async function switchCamera() {
+        if (isStartingCamera || availableCameras.length <= 1) return;
+        const nextIndex = (currentCameraIndex + 1) % availableCameras.length;
+        await startCamera(nextIndex);
+    }
+
+    // ------------------------------------------------------------------
+    // Scan From Image fallback
+    // ------------------------------------------------------------------
+    async function scanFromFile(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+
+        try {
+            await releaseCameraStreams();
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode('reader');
+            }
+            const decodedText = await html5QrCode.scanFile(file, true);
+            onScanSuccess(decodedText);
+        } catch (err) {
+            console.error('File scan error:', err);
+            alert('Could not detect a valid QR Code in the uploaded image. Please try a clearer screenshot.');
+        } finally {
+            input.value = '';
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // QR decode success → extract token → GPS → server
+    // ------------------------------------------------------------------
+    function onScanSuccess(decodedText) {
+        let token = (decodedText || '').trim();
+        // Handle both raw tokens and full URLs encoded in the QR
+        if (token.includes('token=')) {
+            try {
+                const qp = new URLSearchParams(token.includes('?') ? token.split('?')[1] : token);
+                token = qp.get('token') || token;
+            } catch (_) {}
+        }
+        if (token) {
+            submitTokenForAttendance(token);
+        }
+    }
+
+    function onScanFailure(_error) {
+        // Normal per-frame miss – no action needed
+    }
+
+    // ------------------------------------------------------------------
+    // Attendance submission pipeline (with GPS verification)
+    // ------------------------------------------------------------------
+    async function submitTokenForAttendance(token) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        await releaseCameraStreams();
+
+        document.getElementById('scannerSection').style.display   = 'none';
+        document.getElementById('processingSection').style.display = 'block';
+        document.getElementById('successSection').style.display   = 'none';
+        document.getElementById('errorSection').style.display     = 'none';
+
+        if (!navigator.geolocation) {
+            sendAttendanceRequest(token, null, null);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            pos => sendAttendanceRequest(token, pos.coords.latitude, pos.coords.longitude),
+            err => {
+                // GPS denied / unavailable – still send so server-side policy decides
+                console.warn('Geolocation error:', err.code, err.message);
+                sendAttendanceRequest(token, null, null);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    function sendAttendanceRequest(token, lat, lon) {
+        fetch('/student/mark-attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({
+                qrToken: token,
+                deviceInfo: navigator.userAgent,
+                latitude: lat,
+                longitude: lon
+            })
+        })
+        .then(async res => {
+            let data;
+            try { data = await res.json(); } catch(_) { data = {}; }
+            document.getElementById('processingSection').style.display = 'none';
+
+            if (res.ok && data.success) {
+                document.getElementById('resSubjectCode').textContent  = data.subjectCode  || '';
+                document.getElementById('resSubjectName').textContent  = data.subjectName  || '';
+                document.getElementById('resSessionName').textContent  = data.sessionName  || '';
+                document.getElementById('resMarkedAt').textContent     = data.markedAt     || '';
+                document.getElementById('resPercentage').textContent   = data.currentPercentage ? (data.currentPercentage + '%') : 'Updated';
+                document.getElementById('successMessage').textContent  = data.message || 'Attendance marked!';
+                document.getElementById('successSection').style.display = 'block';
+            } else {
+                document.getElementById('errorMessageText').textContent = data.message || 'Failed to mark attendance.';
+                document.getElementById('errorSection').style.display = 'block';
+            }
+        })
+        .catch(() => {
+            document.getElementById('processingSection').style.display = 'none';
+            document.getElementById('errorMessageText').textContent = 'Network error – could not reach the attendance server. Make sure you are on the same Wi-Fi / hotspot as the lecturer\'s PC.';
+            document.getElementById('errorSection').style.display = 'block';
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Reset to scanner view
+    // ------------------------------------------------------------------
+    function restartScanner() {
+        isProcessing = false;
+        document.getElementById('successSection').style.display   = 'none';
+        document.getElementById('errorSection').style.display     = 'none';
+        document.getElementById('processingSection').style.display = 'none';
+        document.getElementById('scannerSection').style.display   = 'block';
+        startCamera();
+    }
+
+    // ------------------------------------------------------------------
+    // Page ready & cleanup
+    // ------------------------------------------------------------------
+    window.addEventListener('beforeunload', () => {
+        releaseCameraStreams();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateCameraButtons();
+        if (prefilledToken && prefilledToken.trim().length > 0) {
+            submitTokenForAttendance(prefilledToken.trim());
+        }
+    });
+</script>
+
+</body>
+</html>

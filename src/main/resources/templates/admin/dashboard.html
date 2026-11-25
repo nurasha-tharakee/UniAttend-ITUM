@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: header('Admin Dashboard')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <!-- Page Content -->
+        <main class="page-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Administrator Dashboard</h3>
+                    <p class="text-muted small mb-0">University Attendance Management Overview &amp; Control Center</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/reports}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Attendance Reports
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon primary">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Total Students</div>
+                            <h2 class="stat-value" th:text="${totalStudents}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Total Lecturers</div>
+                            <h2 class="stat-value" th:text="${totalLecturers}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="bi bi-journal-bookmark"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Total Subjects</div>
+                            <h2 class="stat-value" th:text="${totalSubjects}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="bi bi-broadcast"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Active Sessions</div>
+                            <h2 class="stat-value" th:text="${activeSessionsCount}">0</h2>
+                            <small class="text-muted"><span th:text="${totalSessions}">0</span> Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Operational Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <a th:href="@{/admin/student-verifications}" class="text-decoration-none">
+                        <div class="stat-card">
+                            <div class="stat-icon warning"><i class="bi bi-person-check"></i></div>
+                            <div>
+                                <div class="stat-title">Pending Student Registrations</div>
+                                <h3 class="stat-value text-dark" th:text="${pendingRegistrations}">0</h3>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a th:href="@{/admin/absence-requests}" class="text-decoration-none">
+                        <div class="stat-card">
+                            <div class="stat-icon danger"><i class="bi bi-file-earmark-medical"></i></div>
+                            <div>
+                                <div class="stat-title">Pending Absence Requests</div>
+                                <h3 class="stat-value text-dark" th:text="${pendingAbsences}">0</h3>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a th:href="@{/admin/reports}" class="text-decoration-none">
+                        <div class="stat-card">
+                            <div class="stat-icon success"><i class="bi bi-check2-all"></i></div>
+                            <div>
+                                <div class="stat-title">Total Attendance Marks</div>
+                                <h3 class="stat-value text-dark" th:text="${totalAttendance}">0</h3>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 10 Official NDT Disciplines Overview -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-mortarboard me-2 text-primary"></i>10 Official ITUM NDT Disciplines (Live Database Counts)</span>
+                    <a th:href="@{/admin/academic-structure}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Configure Disciplines</a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6 col-xl-4" th:each="d : ${disciplines}">
+                            <div class="p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold text-dark small" th:text="${d.name}">Discipline</div>
+                                    <small class="text-muted" th:text="${d.division != null ? d.division.name : 'Division'}">Division</small>
+                                </div>
+                                <div class="text-end text-nowrap ms-2">
+                                    <span class="badge bg-primary-subtle text-primary" th:text="${disciplineStudentCounts.get(d.id)} + ' Stu'">0 Stu</span>
+                                    <span class="badge bg-warning-subtle text-dark ms-1" th:text="${disciplineSubjectCounts.get(d.id)} + ' Sub'">0 Sub</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Management Actions -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-lightning-charge me-2 text-warning"></i>Quick Management Actions</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/students}" class="btn btn-outline-primary w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-person-plus-fill fs-3 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold">Register Student</div>
+                                    <small class="text-muted">Add new student records</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/lecturers}" class="btn btn-outline-success w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-person-vcard fs-3 text-success"></i>
+                                <div>
+                                    <div class="fw-bold">Register Lecturer</div>
+                                    <small class="text-muted">Add faculty members</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/subjects}" class="btn btn-outline-warning w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-book-half fs-3 text-warning"></i>
+                                <div>
+                                    <div class="fw-bold">Manage Subjects</div>
+                                    <small class="text-muted">Courses &amp; Lecturers</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/enrollments}" class="btn btn-outline-info w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-card-checklist fs-3 text-info"></i>
+                                <div>
+                                    <div class="fw-bold">Subject Enrollments</div>
+                                    <small class="text-muted">Assign students to classes</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/absence-requests}" class="btn btn-outline-danger w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-file-earmark-medical fs-3 text-danger"></i>
+                                <div>
+                                    <div class="fw-bold">Absence Requests</div>
+                                    <small class="text-muted"><span th:text="${pendingAbsences}">0</span> Pending Review</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/settings}" class="btn btn-outline-secondary w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-geo-alt-fill fs-3 text-danger"></i>
+                                <div>
+                                    <div class="fw-bold">Campus & GPS Settings</div>
+                                    <small class="text-muted">Diyagama Geofence</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/sessions}" class="btn btn-outline-dark w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-broadcast fs-3 text-dark"></i>
+                                <div>
+                                    <div class="fw-bold">Lecture Sessions</div>
+                                    <small class="text-muted">Monitor all sessions</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a th:href="@{/admin/audit-logs}" class="btn btn-outline-dark w-100 py-3 rounded-3 text-start d-flex align-items-center gap-3">
+                                <i class="bi bi-shield-lock-fill fs-3 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold">Security Audit Logs</div>
+                                    <small class="text-muted">System audit trail</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Row -->
+            <div class="row g-4">
+                <!-- Recent Sessions -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Class Sessions</span>
+                            <span class="badge bg-primary rounded-pill" th:text="${recentSessions.size()}">0</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Topic / Session</th>
+                                            <th>Lecturer</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="classSession : ${recentSessions}">
+                                            <td class="fw-semibold text-primary" th:text="${classSession.subject.code}">CS101</td>
+                                            <td th:text="${classSession.sessionName}">Lecture 1</td>
+                                            <td th:text="${classSession.lecturer.fullName}">Dr. Smith</td>
+                                            <td class="small text-muted" th:text="${classSession.sessionDate}">2024-05-10</td>
+                                            <td>
+                                                <span class="badge" th:classappend="${classSession.active} ? 'bg-success' : 'bg-secondary'"
+                                                      th:text="${classSession.active} ? 'Active' : 'Ended'">Active</span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(recentSessions)}">
+                                            <td colspan="5" class="text-center py-4 text-muted">No class sessions conducted yet.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Attendance Activity -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-check2-circle me-2 text-success"></i>Recent Attendance Markings</span>
+                            <span class="badge bg-success rounded-pill" th:text="${totalAttendance}">0</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Subject</th>
+                                            <th>Time Marked</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="att : ${recentAttendance}">
+                                            <td>
+                                                <div class="fw-semibold text-dark" th:text="${att.student.fullName}">Student Name</div>
+                                                <small class="text-muted" th:text="${att.student.studentIdNumber}">STU-001</small>
+                                            </td>
+                                            <td th:text="${att.session.subject.code}">CS101</td>
+                                            <td class="small text-muted" th:text="${#temporals.format(att.markedAt, 'hh:mm a, dd MMM')}">10:00 AM</td>
+                                            <td>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                    <i class="bi bi-check me-1"></i>PRESENT
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(recentAttendance)}">
+                                            <td colspan="4" class="text-center py-4 text-muted">No attendance marked yet.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

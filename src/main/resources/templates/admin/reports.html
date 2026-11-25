@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Discipline-Wise Attendance Reports')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('reports')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">ITUM Discipline-Wise Attendance Reports</h3>
+                    <p class="text-muted small mb-0">Filter attendance logs by NDT discipline, batch, academic year, semester, subject, lecturer, and date range</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/reports/export/csv(discipline=${filter.discipline},batchIntake=${filter.batchIntake},academicYear=${filter.academicYear},semester=${filter.semester},subjectId=${filter.subjectId},lecturerId=${filter.lecturerId},startDate=${filter.startDate},endDate=${filter.endDate})}"
+                       class="btn btn-outline-success rounded-pill px-3">
+                        <i class="bi bi-filetype-csv me-1"></i> Export CSV
+                    </a>
+                    <a th:href="@{/admin/reports/export/pdf(discipline=${filter.discipline},batchIntake=${filter.batchIntake},academicYear=${filter.academicYear},semester=${filter.semester},subjectId=${filter.subjectId},lecturerId=${filter.lecturerId},startDate=${filter.startDate},endDate=${filter.endDate})}"
+                       class="btn btn-outline-danger rounded-pill px-3">
+                        <i class="bi bi-filetype-pdf me-1"></i> Export PDF
+                    </a>
+                    <button class="btn btn-outline-secondary rounded-pill px-3" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <span class="fw-bold"><i class="bi bi-funnel me-2 text-primary"></i>Filter Attendance Records</span>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/reports}" method="get" th:object="${filter}" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">NDT Discipline</label>
+                            <select class="form-select form-select-sm" th:field="*{discipline}">
+                                <option value="">-- All 10 Disciplines --</option>
+                                <option th:each="d : ${disciplines}" th:value="${d.name}" th:text="${d.name}">Discipline</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Batch / Intake</label>
+                            <select class="form-select form-select-sm" th:field="*{batchIntake}">
+                                <option value="">-- All Batches --</option>
+                                <option th:each="b : ${batches}" th:value="${b.name}" th:text="${b.name}">Batch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Academic Year</label>
+                            <select class="form-select form-select-sm" th:field="*{academicYear}">
+                                <option value="">-- All Years --</option>
+                                <option th:each="y : ${academicYears}" th:value="${y.name}" th:text="${y.name}">Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select class="form-select form-select-sm" th:field="*{semester}">
+                                <option value="">-- All Semesters --</option>
+                                <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}">Semester</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Subject</label>
+                            <select class="form-select form-select-sm" th:field="*{subjectId}">
+                                <option value="">-- All Subjects --</option>
+                                <option th:each="sub : ${subjects}" th:value="${sub.id}" th:text="${sub.code} + ' - ' + ${sub.name}">Subject</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Lecturer</label>
+                            <select class="form-select form-select-sm" th:field="*{lecturerId}">
+                                <option value="">-- All Lecturers --</option>
+                                <option th:each="lec : ${lecturers}" th:value="${lec.id}" th:text="${lec.fullName}">Lecturer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">From Date</label>
+                            <input type="date" class="form-control form-control-sm" th:field="*{startDate}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">To Date</label>
+                            <input type="date" class="form-control form-control-sm" th:field="*{endDate}">
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100 rounded-3">
+                                <i class="bi bi-search me-1"></i> Apply Filters
+                            </button>
+                            <a th:href="@{/admin/reports}" class="btn btn-sm btn-outline-secondary rounded-3" title="Clear Filters">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Discipline-wise Breakdown -->
+            <div class="card mb-4">
+                <div class="card-header fw-bold"><i class="bi bi-bar-chart me-2 text-primary"></i>Discipline-Wise Attendance Summary (Filtered Records)</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-4 col-lg-3" th:each="entry : ${disciplineAttendanceCounts}">
+                            <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center small">
+                                <span class="text-truncate me-2" th:text="${entry.key}">Discipline</span>
+                                <span class="badge bg-primary" th:text="${entry.value}">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-table me-2 text-primary"></i>Attendance Records</span>
+                    <span class="badge bg-primary rounded-pill px-3 py-2" th:text="${totalFiltered} + ' Records Found'">0 Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Discipline</th>
+                                <th>Subject</th>
+                                <th>Class Session</th>
+                                <th>Time Marked</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="att : ${reports}">
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${att.student.fullName}">Name</div>
+                                    <small class="badge bg-light text-dark border" th:text="${att.student.studentIdNumber}">ID</small>
+                                </td>
+                                <td class="small" th:text="${att.student.department}">Discipline</td>
+                                <td>
+                                    <div class="fw-semibold text-primary" th:text="${att.session.subject.code}">Code</div>
+                                    <small class="text-muted" th:text="${att.session.subject.name}">Subject</small>
+                                </td>
+                                <td>
+                                    <div th:text="${att.session.sessionName}">Session</div>
+                                    <small class="text-muted" th:text="${att.session.sessionDate}">Date</small>
+                                </td>
+                                <td class="small fw-semibold text-dark" th:text="${#temporals.format(att.markedAt, 'hh:mm:ss a, dd MMM yyyy')}">Time</td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                        <i class="bi bi-check2-circle me-1"></i>PRESENT
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(reports)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    No attendance records found matching the specified filters.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

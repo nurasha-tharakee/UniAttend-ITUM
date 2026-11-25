@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Student Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('students')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Student Management</h3>
+                    <p class="text-muted small mb-0">Search, filter by NDT discipline, edit academic assignments, and manage student accounts</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/student-verifications}" class="btn btn-outline-warning text-dark fw-semibold rounded-pill px-3">
+                        <i class="bi bi-person-check me-1"></i> Verifications
+                        <span class="badge bg-warning text-dark ms-1" th:text="${pendingRegistrationsCount}">0</span>
+                    </a>
+                    <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#registerStudentModal">
+                        <i class="bi bi-person-plus-fill me-1"></i> Register Student
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/admin/students}" method="get" class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Search</label>
+                            <input type="text" class="form-control form-control-sm" name="search" th:value="${search}"
+                                   placeholder="Student ID, name, or email...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">NDT Discipline</label>
+                            <select class="form-select form-select-sm" name="discipline">
+                                <option value="">-- All 10 Disciplines --</option>
+                                <option th:each="d : ${disciplines}" th:value="${d.name}" th:text="${d.name}"
+                                        th:selected="${selectedDiscipline != null and selectedDiscipline == d.name}">Discipline</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Status</label>
+                            <select class="form-select form-select-sm" name="status">
+                                <option value="">-- All --</option>
+                                <option value="APPROVED" th:selected="${selectedStatus == 'APPROVED'}">Approved</option>
+                                <option value="PENDING_APPROVAL" th:selected="${selectedStatus == 'PENDING_APPROVAL'}">Pending Approval</option>
+                                <option value="PENDING_VERIFICATION" th:selected="${selectedStatus == 'PENDING_VERIFICATION'}">Pending Verification</option>
+                                <option value="REJECTED" th:selected="${selectedStatus == 'REJECTED'}">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-1">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+                            <a th:href="@{/admin/students}" class="btn btn-sm btn-outline-secondary" title="Reset"><i class="bi bi-arrow-clockwise"></i></a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-people me-2 text-primary"></i>Students</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" th:text="${students.size()} + ' Students'">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Full Name &amp; Contact</th>
+                                <th>NDT Discipline</th>
+                                <th>Batch / Year / Sem</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="student : ${students}">
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" th:text="${student.studentIdNumber}">STU-001</span>
+                                    <div class="small text-muted mt-1"><code th:text="${student.user.username}">student1</code></div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${student.fullName}">Alex Morgan</div>
+                                    <small class="text-muted" th:text="${student.email}">email</small>
+                                </td>
+                                <td class="small" th:text="${student.department}">Discipline</td>
+                                <td class="small">
+                                    <div th:text="${student.batchIntake != null and !student.batchIntake.isEmpty() ? student.batchIntake : student.academicYear}">Year</div>
+                                    <small class="text-muted" th:text="${student.semester}"></small>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${student.registrationStatus.name() == 'APPROVED'} ? 'bg-success-subtle text-success' : (${student.registrationStatus.name() == 'REJECTED'} ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-dark')"
+                                          th:text="${student.registrationStatus.displayName}">Approved</span>
+                                    <span th:if="${!student.user.enabled}" class="badge bg-secondary-subtle text-muted ms-1">Disabled</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                            data-bs-toggle="modal" th:data-bs-target="'#editStudentModal-' + ${student.id}">
+                                        <i class="bi bi-pencil me-1"></i> Edit
+                                    </button>
+                                    <form th:action="@{/admin/students/{id}/toggle-active(id=${student.id})}" method="post" class="d-inline ms-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2" title="Activate / Deactivate">
+                                            <i class="bi bi-power"></i>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/students/{id}/delete(id=${student.id})}" method="post"
+                                          class="d-inline ms-1" onsubmit="return confirm('Delete this student and all their attendance records?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Edit Student Modal -->
+                                    <div class="modal fade text-start" th:id="'editStudentModal-' + ${student.id}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title fw-bold">Edit Student: <span th:text="${student.studentIdNumber}"></span></h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form th:action="@{/admin/students/{id}/edit(id=${student.id})}" method="post">
+                                                    <div class="modal-body p-4">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Verified Student ID (Locked)</label>
+                                                                <input type="text" class="form-control bg-light" th:value="${student.studentIdNumber}" readonly>
+                                                            </div>
+                                                            <div class="col-md-8">
+                                                                <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                                                                <input type="text" name="fullName" class="form-control" th:value="${student.fullName}" required>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small fw-semibold">University Email <span class="text-danger">*</span></label>
+                                                                <input type="email" name="email" class="form-control" th:value="${student.email}" required>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small fw-semibold">Contact Number</label>
+                                                                <input type="text" name="contactNumber" class="form-control" th:value="${student.contactNumber}">
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small fw-semibold">NDT Discipline</label>
+                                                                <select name="disciplineId" class="form-select">
+                                                                    <option value="">-- Select Discipline --</option>
+                                                                    <option th:each="d : ${disciplines}" th:value="${d.id}" th:text="${d.name}"
+                                                                            th:selected="${(student.discipline != null and student.discipline.id == d.id) or (student.department == d.name)}">Discipline</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <label class="form-label small fw-semibold">Batch / Intake</label>
+                                                                <select name="batchIntake" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="b : ${batches}" th:value="${b.name}" th:text="${b.name}"
+                                                                            th:selected="${student.batchIntake == b.name}">Batch</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <label class="form-label small fw-semibold">Academic Year</label>
+                                                                <select name="academicYear" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="y : ${academicYears}" th:value="${y.name}" th:text="${y.name}"
+                                                                            th:selected="${student.academicYear == y.name}">Year</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Year of Study</label>
+                                                                <select name="yearOfStudy" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="yr : ${yearsOfStudy}" th:value="${yr}" th:text="${yr}"
+                                                                            th:selected="${student.yearOfStudy == yr}">Year</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Semester</label>
+                                                                <select name="semester" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}"
+                                                                            th:selected="${student.semester == sem}">Semester</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Student Group</label>
+                                                                <input type="text" name="studentGroup" class="form-control" th:value="${student.studentGroup}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer bg-light">
+                                                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(students)}">
+                                <td colspan="6" class="text-center py-5 text-muted">No students found matching your criteria.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Register Student Modal -->
+<div class="modal fade" id="registerStudentModal" tabindex="-1" aria-hidden="true"
+     th:classappend="${showRegisterModal} ? 'show d-block' : ''">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Register New Student</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form th:action="@{/admin/students/register}" th:object="${registerRequest}" method="post">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Student ID Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{studentIdNumber}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{fullName}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">University Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" th:field="*{email}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Contact Number</label>
+                            <input type="text" class="form-control" th:field="*{contactNumber}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">NDT Discipline <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{disciplineId}" required>
+                                <option value="">-- Select NDT Discipline --</option>
+                                <option th:each="d : ${disciplines}" th:value="${d.id}" th:text="${d.name}">Discipline</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Batch / Intake</label>
+                            <select class="form-select" th:field="*{batchIntake}">
+                                <option value="">-- Select --</option>
+                                <option th:each="b : ${batches}" th:value="${b.name}" th:text="${b.name}">Batch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Academic Year</label>
+                            <select class="form-select" th:field="*{academicYear}">
+                                <option value="">-- Select --</option>
+                                <option th:each="y : ${academicYears}" th:value="${y.name}" th:text="${y.name}">Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Year of Study</label>
+                            <select class="form-select" th:field="*{yearOfStudy}">
+                                <option value="">-- Select --</option>
+                                <option th:each="yr : ${yearsOfStudy}" th:value="${yr}" th:text="${yr}">First Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select class="form-select" th:field="*{semester}">
+                                <option value="">-- Select --</option>
+                                <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}">Semester 1</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Student Group</label>
+                            <input type="text" class="form-control" th:field="*{studentGroup}" placeholder="e.g. Group A">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{username}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" th:field="*{password}" minlength="6" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Register Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

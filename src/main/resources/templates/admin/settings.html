@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Admin - Campus & GPS Settings')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('settings')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-geo-alt-fill text-danger me-2"></i>Campus Geofence & System Settings
+                    </h3>
+                    <p class="text-muted small mb-0">Configure ITUM Diyagama location, permitted radius, GPS enforcement, and server network address</p>
+                </div>
+                <div>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2">
+                        <i class="bi bi-pin-map-fill me-1"></i> ITUM Diyagama, Homagama
+                    </span>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0" style="border-radius: 16px;">
+                        <div class="card-header bg-white py-3">
+                            <span class="fw-bold text-dark"><i class="bi bi-sliders me-2 text-primary"></i>Configuration Form</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <form th:action="@{/admin/settings/save}" method="post">
+                                <!-- Campus Name -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Institutional Campus Name</label>
+                                    <input type="text" name="campusName" class="form-control" th:value="${campusName}" required>
+                                </div>
+
+                                <!-- GPS Coordinates Row -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold text-dark">Campus Latitude (&deg;N) <span class="text-danger">*</span></label>
+                                        <input type="number" step="any" name="campusLatitude" class="form-control font-monospace"
+                                               th:value="${campusLatitude}" required>
+                                        <small class="text-muted">ITUM Diyagama: <code>6.80894</code></small>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold text-dark">Campus Longitude (&deg;E) <span class="text-danger">*</span></label>
+                                        <input type="number" step="any" name="campusLongitude" class="form-control font-monospace"
+                                               th:value="${campusLongitude}" required>
+                                        <small class="text-muted">ITUM Diyagama: <code>79.99282</code></small>
+                                    </div>
+                                </div>
+
+                                <!-- Radius -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">Permitted Radius (Meters) <span class="text-danger">*</span></label>
+                                    <input type="number" step="10" name="allowedRadius" class="form-control"
+                                           th:value="${allowedRadius}" min="50" max="10000" required>
+                                    <small class="text-muted">Students outside this radius will be rejected when GPS enforcement is active.</small>
+                                </div>
+
+                                <!-- GPS Enforcement Toggle -->
+                                <div class="p-3 bg-light rounded-3 mb-3 border">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="gpsToggle"
+                                               name="gpsEnforcement" value="true" th:checked="${gpsEnforcement}">
+                                        <label class="form-check-label fw-semibold text-dark" for="gpsToggle">
+                                            Enforce Strict GPS Geofencing
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        When enabled, attendance marking requires genuine mobile GPS coordinates and rejects devices outside the ITUM perimeter.
+                                    </small>
+                                </div>
+
+                                <!-- LAN Server Base URL -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-dark">LAN Server Base URL <span class="text-danger">*</span></label>
+                                    <input type="url" name="serverBaseUrl" class="form-control font-monospace"
+                                           th:value="${serverBaseUrl}" required>
+                                    <small class="text-muted">
+                                        Used for generating scannable QR URLs for mobile phones on campus Wi-Fi (e.g. <code>https://172.20.10.2:8443</code>).
+                                    </small>
+                                </div>
+
+                                <!-- Absence Document Mandatory Toggle -->
+                                <div class="p-3 bg-light rounded-3 mb-4 border">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="docMandatoryToggle"
+                                               name="absenceDocMandatory" value="true" th:checked="${absenceDocMandatory}">
+                                        <label class="form-check-label fw-semibold text-dark" for="docMandatoryToggle">
+                                            Make Supporting Document Mandatory for Absence Requests
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        If active, students cannot submit medical or official absence requests without attaching proof (PDF/JPG/PNG).
+                                    </small>
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary rounded-pill px-5">
+                                        <i class="bi bi-save me-1"></i> Save Configuration
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                        <div class="card-header bg-white py-3">
+                            <span class="fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Official ITUM Reference</span>
+                        </div>
+                        <div class="card-body p-4 small text-muted">
+                            <p class="mb-2"><strong>Institution:</strong> Institute of Technology, University of Moratuwa</p>
+                            <p class="mb-2"><strong>Location:</strong> Diyagama, Homagama, Western Province, Sri Lanka</p>
+                            <p class="mb-2"><strong>Coordinates:</strong> 6.80894&deg; N, 79.99282&deg; E</p>
+                            <p class="mb-3"><strong>Default Geofence Radius:</strong> 1000 meters</p>
+                            <hr>
+                            <h6 class="fw-bold text-dark mb-2">Distance Calculation:</h6>
+                            <p class="mb-0">
+                                The system computes geodesic distances server-side using the Haversine spherical equation:
+                                <code>d = 2R &times; arcsin(&radic;(sin&sup2;(&Delta;&phi;/2) + cos &phi;&sub1; cos &phi;&sub2; sin&sup2;(&Delta;&lambda;/2)))</code>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

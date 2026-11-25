@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('NDT Academic Structure & Disciplines')}"></head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('academic-structure')}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">ITUM NDT Academic Structure &amp; Disciplines</h3>
+                    <p class="text-muted small mb-0">Manage Academic Divisions, the 10 official NDT Disciplines, Academic Years, and Batches/Intakes</p>
+                </div>
+            </div>
+
+            <!-- 10 Official NDT Disciplines -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-mortarboard me-2 text-primary"></i>10 Official NDT Disciplines</span>
+                    <span class="badge bg-primary-subtle text-primary" th:text="${disciplines.size()} + ' Disciplines'">10</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>NDT Discipline</th>
+                                <th>Academic Division</th>
+                                <th>Discipline Code (Configurable)</th>
+                                <th>Student ID Format (Configurable)</th>
+                                <th>Active</th>
+                                <th class="text-end">Save</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="d, stat : ${disciplines}">
+                                <form th:action="@{/admin/academic-structure/disciplines/{id}/update(id=${d.id})}" method="post">
+                                    <td class="text-muted small" th:text="${stat.count}">1</td>
+                                    <td class="fw-semibold text-dark" th:text="${d.name}">Discipline</td>
+                                    <td>
+                                        <select name="divisionId" class="form-select form-select-sm">
+                                            <option value="">-- Unassigned --</option>
+                                            <option th:each="division : ${divisions}" th:value="${division.id}" th:text="${division.name}"
+                                                    th:selected="${d.division != null and d.division.id == division.id}">Division</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="code" class="form-control form-control-sm" th:value="${d.code}" placeholder="Admin-defined"></td>
+                                    <td><input type="text" name="studentIdFormat" class="form-control form-control-sm" th:value="${d.studentIdFormat}" placeholder="Admin-defined"></td>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input" name="active" value="true" th:checked="${d.active}">
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3">Save</button>
+                                    </td>
+                                </form>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Academic Years -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-calendar-range me-2 text-success"></i>Academic Years</div>
+                        <div class="card-body">
+                            <form th:action="@{/admin/academic-structure/years/add}" method="post" class="row g-2 mb-3">
+                                <div class="col-7">
+                                    <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. 2026/2027" required>
+                                </div>
+                                <div class="col-3 d-flex align-items-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="currentYear" value="true" id="chkCurYr">
+                                        <label class="form-check-label small" for="chkCurYr">Current</label>
+                                    </div>
+                                </div>
+                                <div class="col-2">
+                                    <button type="submit" class="btn btn-sm btn-success w-100">Add</button>
+                                </div>
+                            </form>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="yr : ${academicYears}">
+                                    <span>
+                                        <strong th:text="${yr.name}">2024/2025</strong>
+                                        <span th:if="${yr.currentYear}" class="badge bg-success ms-2">Current</span>
+                                    </span>
+                                    <form th:if="${!yr.currentYear}" th:action="@{/admin/academic-structure/years/{id}/set-current(id=${yr.id})}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Set Current</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Batches / Intakes / Student Groups -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-collection me-2 text-warning"></i>Batches, Intakes &amp; Student Groups</div>
+                        <div class="card-body">
+                            <form th:action="@{/admin/academic-structure/batches/add}" method="post" class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. 2026 Intake" required>
+                                </div>
+                                <div class="col-3">
+                                    <input type="text" name="academicYear" class="form-control form-control-sm" placeholder="2026/2027">
+                                </div>
+                                <div class="col-3">
+                                    <input type="text" name="studentGroup" class="form-control form-control-sm" placeholder="Group A">
+                                </div>
+                                <div class="col-2">
+                                    <button type="submit" class="btn btn-sm btn-warning text-dark fw-semibold w-100">Add</button>
+                                </div>
+                            </form>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="b : ${batches}">
+                                    <div>
+                                        <strong th:text="${b.name}">2024 Intake</strong>
+                                        <small class="text-muted ms-2" th:text="${b.academicYear} + ' ' + (${b.studentGroup != null ? b.studentGroup : ''})"></small>
+                                        <span class="badge ms-1" th:classappend="${b.active} ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-muted'"
+                                              th:text="${b.active} ? 'Active' : 'Inactive'">Active</span>
+                                    </div>
+                                    <form th:action="@{/admin/academic-structure/batches/{id}/toggle(id=${b.id})}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Toggle</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Divisions -->
+            <div class="card mt-4">
+                <div class="card-header fw-bold"><i class="bi bi-building me-2 text-info"></i>Academic Divisions (Multi-Discipline Management)</div>
+                <div class="card-body">
+                    <form th:action="@{/admin/academic-structure/divisions/add}" method="post" class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="New Academic Division Name" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" name="description" class="form-control form-control-sm" placeholder="Managed disciplines / description">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-info text-white fw-semibold w-100">Add Division</button>
+                        </div>
+                    </form>
+                    <div class="row g-2">
+                        <div class="col-md-6" th:each="division : ${divisions}">
+                            <div class="p-2 border rounded bg-light small">
+                                <strong class="text-dark" th:text="${division.name}">Division</strong>
+                                <div class="text-muted" th:text="${division.description}">Description</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

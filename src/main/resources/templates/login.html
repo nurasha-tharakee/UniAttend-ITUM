@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniAttend | Institute of Technology, University of Moratuwa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(rgba(0, 33, 71, 0.85), rgba(0, 20, 45, 0.92)), url('/images/itum-campus-building.jpg') center/cover no-repeat fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+            margin: 0;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+            max-width: 980px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        .login-side-banner {
+            background: linear-gradient(180deg, #002147 0%, #001733 100%);
+            color: #ffffff;
+            padding: 3rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        .role-pill-btn {
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 0.65rem 0.85rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        .role-pill-btn:hover {
+            background: #fef9e7;
+            border-color: #d4af37;
+            transform: translateY(-1px);
+        }
+        .form-floating:focus-within {
+            z-index: 2;
+        }
+        .btn-itum {
+            background-color: #002147;
+            border-color: #002147;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .btn-itum:hover {
+            background-color: #001733;
+            border-color: #001733;
+            color: #ffffff;
+        }
+        .badge-demo {
+            background-color: rgba(212, 175, 55, 0.15);
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="row g-0">
+        <!-- Left Side: ITUM Institutional Information -->
+        <div class="col-lg-5 login-side-banner d-none d-lg-flex">
+            <div>
+                <div class="mb-4">
+                    <img th:src="@{/images/itum-logo.png}" alt="ITUM Logo" style="height: 48px; max-width: 100%;" class="mb-2">
+                    <h3 class="fw-bold mb-0 text-white" style="letter-spacing: 0.5px;">UniAttend</h3>
+                    <div class="text-white-50 small mt-1">Institute of Technology, University of Moratuwa</div>
+                    <div class="text-white-50 small">Diyagama, Homagama, Sri Lanka</div>
+                    <div class="mt-2"><span class="badge-demo">Student Project / Demonstration</span></div>
+                </div>
+
+                <p class="text-white-50 lh-base small">
+                    Smart attendance management system powered by dynamic expiring QR tokens and GPS geofencing tailored for ITUM lecture halls and laboratories.
+                </p>
+
+                <div class="mt-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 text-white-50 small">
+                        <i class="bi bi-shield-check text-success fs-5"></i>
+                        <span>Role-Based Access & Audit Logging</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-3 text-white-50 small">
+                        <i class="bi bi-clock-history text-warning fs-5"></i>
+                        <span>Dynamic 2-Minute QR Expiration</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-3 text-white-50 small">
+                        <i class="bi bi-geo-alt-fill text-danger fs-5"></i>
+                        <span>ITUM Campus GPS Geofence (Diyagama)</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 text-white-50 small">
+                        <i class="bi bi-file-earmark-medical text-info fs-5"></i>
+                        <span>Medical & Duty Absence Workflows</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-top border-secondary border-opacity-50 text-white-50 small d-flex justify-content-between">
+                <span>&copy; 2024 ITUM Moratuwa</span>
+                <a th:href="@{/welcome}" class="text-info text-decoration-none">About Campus &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="col-lg-7 p-4 p-md-5">
+            <div class="text-center text-lg-start mb-4">
+                <div class="d-flex align-items-center justify-content-center justify-content-lg-start gap-2 d-lg-none mb-3">
+                    <img th:src="@{/images/itum-logo.png}" alt="ITUM Logo" style="height: 38px;">
+                    <div>
+                        <div class="fs-4 fw-bold text-dark">UniAttend</div>
+                        <div class="small text-muted">ITUM Diyagama</div>
+                    </div>
+                </div>
+                <div class="d-lg-none mb-2 text-center text-lg-start">
+                    <span class="badge-demo">Student Project / Demonstration</span>
+                </div>
+                <h3 class="fw-bold text-dark mb-1">Sign In to Portal</h3>
+                <p class="text-muted small">Access your academic attendance records and class sessions</p>
+            </div>
+
+            <!-- Error and Logout Alerts -->
+            <div th:if="${errorMessage != null}" class="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span th:text="${errorMessage}">Invalid credentials</span>
+            </div>
+            <div th:if="${logoutMessage != null}" class="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-check-circle-fill"></i>
+                <span th:text="${logoutMessage}">Logged out successfully</span>
+            </div>
+
+            <form th:action="@{/login}" method="post" id="loginForm">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required autofocus>
+                    <label for="username"><i class="bi bi-person me-2"></i>Username</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                    <label for="password"><i class="bi bi-lock me-2"></i>Password</label>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="remember-me" name="remember-me">
+                        <label class="form-check-label text-muted small" for="remember-me">Remember me</label>
+                    </div>
+                    <span class="text-muted small">Asia/Colombo Timezone</span>
+                </div>
+
+                <button type="submit" class="btn btn-itum w-100 py-3 rounded-3 mb-3 shadow-sm">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Sign In to UniAttend
+                </button>
+                <a th:href="@{/register}" class="btn btn-outline-primary w-100 py-2 rounded-3 mb-4 fw-semibold">
+                    <i class="bi bi-person-plus me-2"></i> Register as Student (NDT)
+                </a>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    function fillCredentials(user, pass) {
+        document.getElementById('username').value = user;
+        document.getElementById('password').value = pass;
+    }
+</script>
+
+</body>
+</html>

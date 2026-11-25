@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Attendance History')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('history')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">My Attendance History</h3>
+                    <p class="text-muted small mb-0">Complete record of your verified class attendances</p>
+                </div>
+                <div>
+                    <a th:href="@{/student/scan}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-camera-fill me-1"></i> Scan Class QR
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-4">
+                    <div class="stat-card">
+                        <div class="stat-icon primary">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Eligible Classes</div>
+                            <h2 class="stat-value" th:text="${stats.totalConducted}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="bi bi-check-all"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Present Count</div>
+                            <h2 class="stat-value text-success" th:text="${stats.presentCount}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Absent Count</div>
+                            <h2 class="stat-value text-danger" th:text="${stats.absentCount}">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance History Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Verified Attendance Log</span>
+                    <span class="badge bg-primary rounded-pill px-3 py-2" th:text="${attendanceHistory.size()} + ' Records'">0 Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Subject Code</th>
+                                    <th>Subject Name</th>
+                                    <th>Session / Topic</th>
+                                    <th>Class Date</th>
+                                    <th>Marked Time</th>
+                                    <th>IP / Device</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="att : ${attendanceHistory}">
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1"
+                                              th:text="${att.session.subject.code}">CS101</span>
+                                    </td>
+                                    <td class="fw-semibold text-dark" th:text="${att.session.subject.name}">Data Structures</td>
+                                    <td th:text="${att.session.sessionName}">Lecture 1</td>
+                                    <td class="small" th:text="${att.session.sessionDate}">2024-05-10</td>
+                                    <td class="small fw-semibold text-dark" th:text="${#temporals.format(att.markedAt, 'hh:mm:ss a, dd MMM yyyy')}">10:05 AM</td>
+                                    <td>
+                                        <small class="text-muted" th:text="${att.ipAddress}">127.0.0.1</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                            <i class="bi bi-check2"></i> PRESENT
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(attendanceHistory)}">
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                        No attendance history recorded yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

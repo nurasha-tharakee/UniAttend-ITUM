@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Subject Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('subjects')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Subject &amp; Course Management</h3>
+                    <p class="text-muted small mb-0">Manage specialized and common NDT subjects, disciplines, semesters, and assigned lecturers</p>
+                </div>
+                <div>
+                    <button class="btn btn-warning text-dark fw-semibold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                        <i class="bi bi-plus-circle me-1"></i> Add New Subject
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/admin/subjects}" method="get" class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Search</label>
+                            <input type="text" class="form-control form-control-sm" name="search" th:value="${search}" placeholder="Code, name, or discipline...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">NDT Discipline</label>
+                            <select class="form-select form-select-sm" name="disciplineId">
+                                <option value="">-- All Disciplines --</option>
+                                <option th:each="d : ${disciplines}" th:value="${d.id}" th:text="${d.name}"
+                                        th:selected="${selectedDisciplineId != null and selectedDisciplineId == d.id}">Discipline</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select class="form-select form-select-sm" name="semester">
+                                <option value="">-- All Semesters --</option>
+                                <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}"
+                                        th:selected="${selectedSemester != null and selectedSemester == sem}">Semester</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Status</label>
+                            <select class="form-select form-select-sm" name="status">
+                                <option value="">-- All --</option>
+                                <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Active</option>
+                                <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Inactive</option>
+                                <option value="ARCHIVED" th:selected="${selectedStatus == 'ARCHIVED'}">Archived</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-1">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+                            <a th:href="@{/admin/subjects}" class="btn btn-sm btn-outline-secondary" title="Reset"><i class="bi bi-arrow-clockwise"></i></a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Subjects Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-journal-bookmark me-2 text-warning"></i>Subjects</span>
+                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle" th:text="${subjects.size()} + ' Subjects'">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Code &amp; Name</th>
+                                <th>Discipline(s)</th>
+                                <th>Year / Semester</th>
+                                <th>Status</th>
+                                <th>Assigned Lecturer</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="subject : ${subjects}">
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" th:text="${subject.code}">CS101</span>
+                                    <div class="fw-semibold text-dark mt-1" th:text="${subject.name}">Subject Name</div>
+                                    <small class="text-muted" th:if="${subject.creditValue != null}" th:text="${subject.creditValue} + ' Credits'"></small>
+                                </td>
+                                <td class="small">
+                                    <span th:if="${subject.commonSubject}" class="badge bg-info-subtle text-info me-1">Common</span>
+                                    <span th:text="${subject.department}">Discipline</span>
+                                </td>
+                                <td class="small">
+                                    <div th:text="${subject.semester}">Semester 1</div>
+                                    <small class="text-muted" th:text="${subject.academicYear}"></small>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${subject.status.name() == 'ACTIVE'} ? 'bg-success-subtle text-success' : (${subject.status.name() == 'ARCHIVED'} ? 'bg-secondary-subtle text-muted' : 'bg-warning-subtle text-dark')"
+                                          th:text="${subject.status.displayName}">Active</span>
+                                </td>
+                                <td>
+                                    <form th:action="@{/admin/subjects/{id}/assign-lecturer(id=${subject.id})}" method="post" class="d-inline-flex gap-1 align-items-center">
+                                        <select name="lecturerId" class="form-select form-select-sm" style="width: auto; min-width: 140px;">
+                                            <option value="">-- Unassigned --</option>
+                                            <option th:each="lec : ${lecturers}" th:value="${lec.id}" th:text="${lec.fullName}"
+                                                    th:selected="${subject.lecturer != null and subject.lecturer.id == lec.id}">Lecturer</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Save Lecturer"><i class="bi bi-check2"></i></button>
+                                    </form>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a th:href="@{/admin/subjects/{id}(id=${subject.id})}" class="btn btn-sm btn-outline-info" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-primary ms-1" title="Edit Subject"
+                                            data-bs-toggle="modal" th:data-bs-target="'#editSubjectModal-' + ${subject.id}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form th:action="@{/admin/subjects/{id}/archive(id=${subject.id})}" method="post" class="d-inline ms-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark" title="Archive / Restore">
+                                            <i class="bi bi-archive"></i>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/subjects/{id}/delete(id=${subject.id})}" method="post"
+                                          class="d-inline ms-1" onsubmit="return confirm('Delete this subject? Unsafe deletion is blocked if sessions/attendance exist.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Subject">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Edit Subject Modal -->
+                                    <div class="modal fade text-start" th:id="'editSubjectModal-' + ${subject.id}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title fw-bold">Edit Subject: <span th:text="${subject.code}"></span></h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form th:action="@{/admin/subjects/{id}/edit(id=${subject.id})}" method="post">
+                                                    <div class="modal-body p-4">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Subject Code <span class="text-danger">*</span></label>
+                                                                <input type="text" class="form-control" name="code" th:value="${subject.code}" required>
+                                                            </div>
+                                                            <div class="col-md-8">
+                                                                <label class="form-label small fw-semibold">Subject Name <span class="text-danger">*</span></label>
+                                                                <input type="text" class="form-control" name="name" th:value="${subject.name}" required>
+                                                            </div>
+                                                            <div class="col-md-12">
+                                                                <label class="form-label small fw-semibold">Relevant NDT Discipline(s)</label>
+                                                                <select name="disciplineIds" class="form-select" multiple size="4">
+                                                                    <option th:each="d : ${disciplines}" th:value="${d.id}" th:text="${d.name}"
+                                                                            th:selected="${subject.disciplines.contains(d)}">Discipline</option>
+                                                                </select>
+                                                                <small class="text-muted">Hold Ctrl/Cmd to select multiple disciplines for common subjects.</small>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Academic Year</label>
+                                                                <select name="academicYear" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="y : ${academicYears}" th:value="${y.name}" th:text="${y.name}"
+                                                                            th:selected="${subject.academicYear == y.name}">2024/2025</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Semester</label>
+                                                                <select name="semester" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}"
+                                                                            th:selected="${subject.semester == sem}">Semester 1</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Batch / Intake</label>
+                                                                <select name="batchIntake" class="form-select">
+                                                                    <option value="">-- Select --</option>
+                                                                    <option th:each="b : ${batches}" th:value="${b.name}" th:text="${b.name}"
+                                                                            th:selected="${subject.batchIntake == b.name}">Batch</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <label class="form-label small fw-semibold">Credits</label>
+                                                                <input type="number" class="form-control" name="creditValue" th:value="${subject.creditValue}" min="0" max="30">
+                                                            </div>
+                                                            <div class="col-md-5">
+                                                                <label class="form-label small fw-semibold">Assigned Lecturer</label>
+                                                                <select name="lecturerId" class="form-select">
+                                                                    <option value="">-- Unassigned --</option>
+                                                                    <option th:each="lec : ${lecturers}" th:value="${lec.id}" th:text="${lec.fullName}"
+                                                                            th:selected="${subject.lecturer != null and subject.lecturer.id == lec.id}">Lecturer</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label small fw-semibold">Status</label>
+                                                                <select name="status" class="form-select">
+                                                                    <option value="ACTIVE" th:selected="${subject.status.name() == 'ACTIVE'}">Active</option>
+                                                                    <option value="INACTIVE" th:selected="${subject.status.name() == 'INACTIVE'}">Inactive</option>
+                                                                    <option value="ARCHIVED" th:selected="${subject.status.name() == 'ARCHIVED'}">Archived</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer bg-light">
+                                                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(subjects)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                    No subjects found matching your criteria.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1" aria-labelledby="addSubjectModalLabel" aria-hidden="true"
+     th:classappend="${showAddModal} ? 'show d-block' : ''">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header bg-warning text-dark" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <h5 class="modal-title fw-bold" id="addSubjectModalLabel">
+                    <i class="bi bi-journal-plus me-2"></i>Add New NDT Subject
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/admin/subjects/add}" th:object="${subjectDto}" method="post">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Subject Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{code}" placeholder="Admin-defined code" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Subject Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{name}" placeholder="Subject title" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">Relevant NDT Discipline(s)</label>
+                            <select class="form-select" th:field="*{disciplineIds}" multiple size="4">
+                                <option th:each="d : ${disciplines}" th:value="${d.id}" th:text="${d.name}">Discipline</option>
+                            </select>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" th:field="*{commonSubject}" id="chkCommonSub">
+                                <label class="form-check-label small" for="chkCommonSub">Common academic subject shared across multiple disciplines</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Academic Year</label>
+                            <select class="form-select" th:field="*{academicYear}">
+                                <option value="">-- Select Year --</option>
+                                <option th:each="y : ${academicYears}" th:value="${y.name}" th:text="${y.name}">2024/2025</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select class="form-select" th:field="*{semester}">
+                                <option value="">-- Select Semester --</option>
+                                <option th:each="sem : ${allSemesters}" th:value="${sem}" th:text="${sem}">Semester 1</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Batch / Intake</label>
+                            <select class="form-select" th:field="*{batchIntake}">
+                                <option value="">-- Select Batch --</option>
+                                <option th:each="b : ${batches}" th:value="${b.name}" th:text="${b.name}">Batch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Credit Value</label>
+                            <input type="number" class="form-control" th:field="*{creditValue}" min="0" max="30" placeholder="Optional">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Assign Lecturer</label>
+                            <select class="form-select" th:field="*{lecturerId}">
+                                <option value="">-- Choose Lecturer (Optional) --</option>
+                                <option th:each="lec : ${lecturers}" th:value="${lec.id}" th:text="${lec.fullName} + ' (' + ${lec.department} + ')'">Lecturer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light px-4 py-3" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-semibold rounded-pill px-4">Create Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

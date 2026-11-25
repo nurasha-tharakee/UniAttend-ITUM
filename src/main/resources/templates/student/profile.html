@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('My Student Profile')}"></head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('profile')}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+        <main class="page-container">
+            <h3 class="fw-bold text-dark mb-1">My Student Profile</h3>
+            <p class="text-muted small mb-4">View verified ITUM academic details and update permitted contact details or password</p>
+
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-shield-check me-2 text-success"></i>Verified Academic Details (Read-Only)</div>
+                        <div class="card-body small">
+                            <div class="mb-2"><strong>University Student ID:</strong> <span th:text="${student.studentIdNumber}"></span></div>
+                            <div class="mb-2"><strong>Full Name:</strong> <span th:text="${student.fullName}"></span></div>
+                            <div class="mb-2"><strong>University Email:</strong> <span th:text="${student.email}"></span></div>
+                            <div class="mb-2"><strong>Campus:</strong> <span th:text="${student.campus}"></span></div>
+                            <div class="mb-2"><strong>Programme:</strong> <span th:text="${student.programme}"></span></div>
+                            <div class="mb-2"><strong>NDT Discipline:</strong> <span th:text="${student.department}"></span></div>
+                            <div class="mb-2"><strong>Batch / Intake:</strong> <span th:text="${student.batchIntake}"></span></div>
+                            <div class="mb-2"><strong>Academic Year / Study Year:</strong> <span th:text="${student.academicYear} + ' / ' + (${student.yearOfStudy != null ? student.yearOfStudy : ''})"></span></div>
+                            <div class="mb-2"><strong>Semester / Group:</strong> <span th:text="(${student.semester != null ? student.semester : ''}) + ' ' + (${student.studentGroup != null ? student.studentGroup : ''})"></span></div>
+                            <div class="mb-0"><strong>Verification Status:</strong> <span class="badge bg-success" th:text="${student.registrationStatus.displayName}">Approved</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Contact Details &amp; Password</div>
+                        <div class="card-body">
+                            <form th:action="@{/student/profile}" method="post">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Contact Number</label>
+                                    <input type="text" name="contactNumber" class="form-control" th:value="${student.contactNumber}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Personal Email (Optional)</label>
+                                    <input type="email" name="personalEmail" class="form-control" th:value="${student.personalEmail}">
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Current Password (only if changing password)</label>
+                                    <input type="password" name="currentPassword" class="form-control">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-semibold">New Password (min 6 chars)</label>
+                                    <input type="password" name="newPassword" class="form-control" minlength="6">
+                                </div>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">Save Profile</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

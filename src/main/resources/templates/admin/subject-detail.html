@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Subject Details')}"></head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('subjects')}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+        <main class="page-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <a th:href="@{/admin/subjects}" class="btn btn-sm btn-outline-secondary rounded-pill mb-2">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Subjects
+                    </a>
+                    <h3 class="fw-bold text-dark mb-0">
+                        <span class="badge bg-primary me-2" th:text="${subject.code}">CODE</span>
+                        <span th:text="${subject.name}">Subject Name</span>
+                    </h3>
+                </div>
+                <span class="badge px-3 py-2"
+                      th:classappend="${subject.status.name() == 'ACTIVE'} ? 'bg-success' : 'bg-secondary'"
+                      th:text="${subject.status.displayName}">ACTIVE</span>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold">Subject Details</div>
+                        <div class="card-body small">
+                            <div class="mb-2"><strong>Code:</strong> <span th:text="${subject.code}"></span></div>
+                            <div class="mb-2"><strong>Name:</strong> <span th:text="${subject.name}"></span></div>
+                            <div class="mb-2"><strong>Discipline(s):</strong> <span th:text="${subject.department}"></span></div>
+                            <div class="mb-2"><strong>Common Subject:</strong> <span th:text="${subject.commonSubject ? 'Yes' : 'No'}"></span></div>
+                            <div class="mb-2"><strong>Academic Year:</strong> <span th:text="${subject.academicYear != null and !subject.academicYear.isEmpty() ? subject.academicYear : 'N/A'}"></span></div>
+                            <div class="mb-2"><strong>Semester:</strong> <span th:text="${subject.semester}"></span></div>
+                            <div class="mb-2"><strong>Batch / Intake:</strong> <span th:text="${subject.batchIntake != null and !subject.batchIntake.isEmpty() ? subject.batchIntake : 'N/A'}"></span></div>
+                            <div class="mb-2"><strong>Credit Value:</strong> <span th:text="${subject.creditValue != null ? subject.creditValue : 'N/A'}"></span></div>
+                            <div class="mb-2"><strong>Assigned Lecturer:</strong> <span th:text="${subject.lecturer != null ? subject.lecturer.fullName : 'Not Assigned'}"></span></div>
+                            <div class="mb-0"><strong>Enrolled Students:</strong> <span th:text="${enrollments.size()}">0</span> &bull; <strong>Sessions Conducted:</strong> <span th:text="${sessions.size()}">0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold">Enrolled Students (<span th:text="${enrollments.size()}">0</span>)</div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 360px;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead><tr><th>Student ID</th><th>Full Name</th><th>Discipline</th></tr></thead>
+                                    <tbody>
+                                    <tr th:each="e : ${enrollments}">
+                                        <td th:text="${e.student.studentIdNumber}">ID</td>
+                                        <td th:text="${e.student.fullName}">Name</td>
+                                        <td th:text="${e.student.department}">Discipline</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(enrollments)}"><td colspan="3" class="text-center py-4 text-muted">No students enrolled yet.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

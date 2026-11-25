@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Admin - Absence Requests')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('absence')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-file-earmark-medical text-primary me-2"></i>Institutional Absence Requests
+                    </h3>
+                    <p class="text-muted small mb-0">Overview and administrative override for all student absence requests</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                        Total: <strong th:text="${totalCount}">0</strong>
+                    </span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+                        Pending: <strong th:text="${pendingCount}">0</strong>
+                    </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                        Approved: <strong th:text="${approvedCount}">0</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/admin/absence-requests}" method="get" class="row g-3 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-muted">Filter by Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">-- All Statuses --</option>
+                                <option value="PENDING" th:selected="${selectedStatus == 'PENDING'}">Pending</option>
+                                <option value="APPROVED" th:selected="${selectedStatus == 'APPROVED'}">Approved</option>
+                                <option value="REJECTED" th:selected="${selectedStatus == 'REJECTED'}">Rejected</option>
+                                <option value="NEEDS_CLARIFICATION" th:selected="${selectedStatus == 'NEEDS_CLARIFICATION'}">Needs Clarification</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-filter me-1"></i> Apply Filter
+                            </button>
+                            <a th:href="@{/admin/absence-requests}" class="btn btn-outline-secondary rounded-pill px-3">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student</th>
+                                    <th>Subject & Lecturer</th>
+                                    <th>Reason Category</th>
+                                    <th>Dates</th>
+                                    <th>Document</th>
+                                    <th>Status</th>
+                                    <th>Reviewer Comments</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="req, iter : ${requests}">
+                                    <td class="text-muted small" th:text="${iter.count}">1</td>
+                                    <td>
+                                        <div class="fw-bold text-dark" th:text="${req.student.fullName}">Student Name</div>
+                                        <span class="badge bg-light text-dark border small" th:text="${req.student.studentIdNumber}">STU-001</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark" th:text="${req.subject.code} + ' - ' + ${req.subject.name}">CS101</div>
+                                        <div class="small text-muted" th:text="'Lecturer: ' + (${req.subject.lecturer != null ? req.subject.lecturer.fullName : 'Unassigned'})">Lecturer</div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold text-dark" th:text="${req.reasonCategory.displayName}">Medical</span>
+                                        <div class="small text-muted text-truncate" style="max-width: 180px;" th:text="${req.explanation}">Reason</div>
+                                    </td>
+                                    <td class="small">
+                                        <span th:text="${req.startDate}">2024-05-10</span>
+                                        <span th:if="${req.startDate != req.endDate}"> to <span th:text="${req.endDate}">2024-05-12</span></span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${req.attachmentPath != null}"
+                                           th:href="@{/admin/absence-requests/{id}/attachment(id=${req.id})}"
+                                           class="btn btn-sm btn-outline-primary rounded-pill" target="_blank">
+                                            <i class="bi bi-paperclip me-1"></i> File
+                                        </a>
+                                        <span th:if="${req.attachmentPath == null}" class="text-muted small">None</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${req.status.name() == 'APPROVED'} ? 'bg-success' : (${req.status.name() == 'PENDING'} ? 'bg-warning text-dark' : (${req.status.name() == 'NEEDS_CLARIFICATION'} ? 'bg-info text-dark' : 'bg-danger'))"
+                                              th:text="${req.status.displayName}">PENDING</span>
+                                    </td>
+                                    <td class="small">
+                                        <span th:text="${req.reviewComments}">Comments</span>
+                                        <div th:if="${req.reviewedBy != null}" class="text-muted" style="font-size: 0.75rem;">
+                                            By <span th:text="${req.reviewedBy}">admin</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill"
+                                                data-bs-toggle="modal"
+                                                th:data-bs-target="'#adminReviewModal' + ${req.id}">
+                                            <i class="bi bi-pencil me-1"></i> Review
+                                        </button>
+
+                                        <!-- Admin Modal -->
+                                        <div class="modal fade" th:id="'adminReviewModal' + ${req.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form th:action="@{/admin/absence-requests/{id}/review(id=${req.id})}" method="post">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Admin Override - Request #<span th:text="${req.id}">1</span></h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body text-start">
+                                                            <p class="mb-2"><strong>Student:</strong> <span th:text="${req.student.fullName}">Alex Morgan</span></p>
+                                                            <p class="mb-2"><strong>Reason:</strong> <span th:text="${req.reasonCategory.displayName}">Medical</span></p>
+                                                            <p class="mb-3"><strong>Details:</strong> <span th:text="${req.explanation}">Reason text</span></p>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                                                                <select name="status" class="form-select" required>
+                                                                    <option value="APPROVED" th:selected="${req.status.name() == 'APPROVED'}">Approve</option>
+                                                                    <option value="REJECTED" th:selected="${req.status.name() == 'REJECTED'}">Reject</option>
+                                                                    <option value="NEEDS_CLARIFICATION" th:selected="${req.status.name() == 'NEEDS_CLARIFICATION'}">Needs Clarification</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Admin Comments</label>
+                                                                <textarea name="comments" class="form-control" rows="3"
+                                                                          th:text="${req.reviewComments}"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                                                            <button type="submit" class="btn btn-primary rounded-pill px-4">Save Decision</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(requests)}">
+                                    <td colspan="9" class="text-center py-5 text-muted">
+                                        No absence requests found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

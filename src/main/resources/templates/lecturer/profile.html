@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('My Lecturer Profile')}"></head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('profile')}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+        <main class="page-container">
+            <h3 class="fw-bold text-dark mb-1">My Lecturer Profile</h3>
+            <p class="text-muted small mb-4">View verified employment assignments and update permitted contact details or password</p>
+
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-person-badge me-2 text-success"></i>Verified Employment Details (Admin-Managed)</div>
+                        <div class="card-body small">
+                            <div class="mb-2"><strong>Lecturer ID:</strong> <span th:text="${lecturer.employeeId}"></span></div>
+                            <div class="mb-2"><strong>Academic Division:</strong> <span th:text="${lecturer.academicDivision != null ? lecturer.academicDivision.name : lecturer.department}"></span></div>
+                            <div class="mb-2"><strong>Designation:</strong> <span th:text="${lecturer.designation != null ? lecturer.designation : 'Lecturer'}"></span></div>
+                            <div class="mb-2"><strong>Associated Disciplines:</strong>
+                                <span class="badge bg-light text-dark border me-1" th:each="d : ${lecturer.associatedDisciplines}" th:text="${d.name}">Disc</span>
+                            </div>
+                            <div class="mb-0"><strong>Assigned Subjects:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li th:each="s : ${subjects}" th:text="${s.code} + ' - ' + ${s.name}">Subject</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Permitted Profile Details</div>
+                        <div class="card-body">
+                            <form th:action="@{/lecturer/profile}" method="post">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold">Title</label>
+                                        <input type="text" name="title" class="form-control" th:value="${lecturer.title}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" name="fullName" class="form-control" th:value="${lecturer.fullName}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">University Email <span class="text-danger">*</span></label>
+                                        <input type="email" name="email" class="form-control" th:value="${lecturer.email}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Contact Number</label>
+                                        <input type="text" name="contactNumber" class="form-control" th:value="${lecturer.contactNumber}">
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Current Password (only if changing password)</label>
+                                    <input type="password" name="currentPassword" class="form-control">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-semibold">New Password (min 6 chars)</label>
+                                    <input type="password" name="newPassword" class="form-control" minlength="6">
+                                </div>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">Save Profile</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

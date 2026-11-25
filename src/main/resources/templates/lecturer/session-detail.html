@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: header('Session QR Code & Attendance')}"></head>
+
+<body>
+
+    <div class="app-wrapper">
+        <div th:replace="~{fragments/layout :: sidebar('sessions')}"></div>
+
+        <div class="main-content">
+            <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <!-- Top Session Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-primary px-3 py-2 fs-6" th:text="${classSession.subject != null ? classSession.subject.code : ''}">CS101</span>
+                        <h4 class="fw-bold text-dark mb-0" th:text="${classSession.sessionName}">Session Topic</h4>
+                        <span class="badge" th:classappend="${classSession.active} ? 'bg-success' : 'bg-secondary'"
+                              th:text="${classSession.active} ? 'Live Session' : 'Ended'">Live</span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <span th:text="${classSession.subject != null ? classSession.subject.name : ''}">Subject Name</span> &bull;
+                        Date: <strong th:text="${classSession.sessionDate}">2024-05-10</strong> &bull;
+                        Started: <strong th:text="${classSession.startTime}">10:00</strong>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#projectorModal" th:if="${classSession.active == true and qrImage != null}">
+                        <i class="bi bi-display me-1"></i> Projector Mode
+                    </button>
+                    <form th:action="@{/lecturer/sessions/{id}/end(id=${classSession.id})}" method="post" class="d-inline"
+                          th:if="${classSession.active == true}" onsubmit="return confirm('End this attendance session? Students will no longer be able to mark attendance.');">
+                        <button type="submit" class="btn btn-outline-danger rounded-pill px-3">
+                            <i class="bi bi-stop-circle me-1"></i> End Session
+                        </button>
+                        <form th:action="@{/lecturer/sessions/{id}/end(id=${session.id})}" method="post"
+                            class="d-inline" th:if="${session.active == true}"
+                            onsubmit="return confirm('End this attendance session? Students will no longer be able to mark attendance.');">
+                            <button type="submit" class="btn btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-stop-circle me-1"></i> End Session
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            <div class="row g-4">
+                <!-- Left: Dynamic QR Code Box -->
+                <div class="col-lg-5">
+                    <div class="card h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-qr-code me-2 text-primary"></i>Dynamic QR Code</span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle">Expires in 2 mins</span>
+                        </div>
+                        <div class="card-body text-center p-4">
+                            <!-- QR Active State -->
+                            <div th:if="${qrImage != null}" id="qrActiveContainer">
+                                <div class="qr-image-wrapper mb-3" id="qrImageWrapper">
+                                    <img th:src="${qrImage}" alt="Session QR Code" class="qr-image img-fluid" id="qrImage">
+                                </div>
+
+                                <!-- QR Expired or Session Ended State -->
+                                <div id="qrExpiredContainer"
+                                    th:style="${session.active == true and qrImage != null} ? 'display: none;' : 'display: block;'">
+                                    <div class="py-4">
+                                        <i
+                                            class="bi bi-exclamation-triangle-fill text-warning display-3 d-block mb-3"></i>
+                                        <h5 class="fw-bold text-dark">QR Code Expired / Inactive</h5>
+                                        <p class="text-muted small">
+                                            For security, each QR code expires after 2 minutes. Click below to generate
+                                            a new valid QR code.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Refresh QR Form -->
+                                <form th:action="@{/lecturer/sessions/{id}/refresh-qr(id=${session.id})}" method="post"
+                                    th:if="${session.active == true}">
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm w-100"
+                                        id="btnRefreshQr">
+                                        <i class="bi bi-arrow-repeat me-2"></i> Refresh / Regenerate QR Code
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- QR Expired or Session Ended State -->
+                            <div id="qrExpiredContainer" th:style="${qrImage != null} ? 'display: none;' : 'display: block;'">
+                                <div class="py-4">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning display-3 d-block mb-3"></i>
+                                    <h5 class="fw-bold text-dark">QR Code Expired / Inactive</h5>
+                                    <p class="text-muted small">
+                                        For security, each QR code expires after 2 minutes. Click below to generate a new valid QR code.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Refresh QR Form -->
+                            <form th:action="@{/lecturer/sessions/{id}/refresh-qr(id=${classSession.id})}" method="post" th:if="${classSession.active == true}">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm w-100" id="btnRefreshQr">
+                                    <i class="bi bi-arrow-repeat me-2"></i> Refresh / Regenerate QR Code
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Attendance Roster -->
+                    <div class="col-lg-7">
+                        <div class="card h-100">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-bold"><i class="bi bi-person-check-fill me-2 text-success"></i>Live
+                                        Attendance Roster</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle ms-2"
+                                        id="liveAttendanceCount"
+                                        th:text="${attendanceCount} + ' / ' + ${totalEnrolled} + ' Present'">0
+                                        Present</span>
+                                </div>
+                                <div class="spinner-grow spinner-grow-sm text-success" role="status"
+                                    title="Live Auto-Sync Active">
+                                    <span class="visually-hidden">Live</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="sticky-top bg-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Student ID</th>
+                                                <th>Full Name</th>
+                                                <th>Department</th>
+                                                <th>Marked Time</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="attendanceTableBody">
+                                            <tr th:each="att, iterStat : ${attendances}">
+                                                <td class="text-muted small" th:text="${iterStat.count}">1</td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border fw-bold"
+                                                        th:text="${att.student.studentIdNumber}">STU-001</span>
+                                                </td>
+                                                <td class="fw-semibold text-dark" th:text="${att.student.fullName}">
+                                                    Student Name</td>
+                                                <td class="small text-muted" th:text="${att.student.department}">
+                                                    Computer Science</td>
+                                                <td class="small fw-semibold text-dark"
+                                                    th:text="${#temporals.format(att.markedAt, 'hh:mm:ss a')}">10:05 AM
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        class="badge bg-success-subtle text-success border border-success-subtle">
+                                                        <i class="bi bi-check2"></i> PRESENT
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr id="emptyAttendanceRow" th:if="${#lists.isEmpty(attendances)}">
+                                                <td colspan="6" class="text-center py-5 text-muted">
+                                                    <i
+                                                        class="bi bi-clock fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                                    Waiting for students to scan QR code... Records will appear here in
+                                                    real-time.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<!-- Fullscreen Projector Mode Modal -->
+<div class="modal fade" id="projectorModal" tabindex="-1" aria-hidden="true" th:if="${classSession.active == true and qrImage != null}">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark text-white text-center d-flex flex-column justify-content-between p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-start">
+                    <h2 class="fw-bold mb-0 text-white" th:text="${classSession.subject != null ? (classSession.subject.code + ' - ' + classSession.subject.name) : ''}">CS101</h2>
+                    <h5 class="text-info mb-0" th:text="${classSession.sessionName}">Session Topic</h5>
+                </div>
+
+                <div class="my-auto py-3">
+                    <div class="d-inline-block p-4 bg-white rounded-4 shadow-lg mb-3">
+                        <img th:src="${qrImage}" alt="Class QR Code"
+                            style="width: 420px; height: 420px; max-width: 80vw; max-height: 50vh;"
+                            id="projectorQrImage">
+                    </div>
+                    <div class="fs-3 fw-bold text-warning mb-2" id="projectorCountdown">
+                        <i class="bi bi-stopwatch me-2"></i>Expires in: 02:00
+                    </div>
+                    <p class="text-white-50 fs-5 mb-0">Open UniAttend mobile app &rarr; Scan QR Code to mark attendance
+                    </p>
+                </div>
+
+                <div
+                    class="d-flex justify-content-between align-items-center border-top border-secondary pt-3 text-white-50">
+                    <span>UniAttend Dynamic Attendance System</span>
+                    <span class="fs-5 text-white fw-bold" id="projectorLiveCount"
+                        th:text="${attendanceCount} + ' Students Marked'">0 Students</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: scripts}"></div>
+
+<!-- Live Attendance Auto-Polling and Countdown Script -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    let remainingSeconds = /*[[${remainingSeconds}]]*/ 0;
+    const sessionId = /*[[${classSession.id}]]*/ 0;
+    const isSessionActive = /*[[${classSession.active}]]*/ false;
+    const totalEnrolled = /*[[${totalEnrolled}]]*/ 0;
+    /*]]>*/
+
+        const timerBadge = document.getElementById('timerBadge');
+        const timerCountdown = document.getElementById('timerCountdown');
+        const projectorCountdown = document.getElementById('projectorCountdown');
+        const timerProgressBar = document.getElementById('timerProgressBar');
+        const qrActiveContainer = document.getElementById('qrActiveContainer');
+        const qrExpiredContainer = document.getElementById('qrExpiredContainer');
+        const qrImageWrapper = document.getElementById('qrImageWrapper');
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        // Countdown Timer Loop (1s) with Automatic Seamless Refresh
+        if (isSessionActive) {
+            const maxTime = 120;
+            let isRefreshing = false;
+
+            const refreshQrAutomatically = () => {
+                if (isRefreshing) return;
+                isRefreshing = true;
+
+                fetch(`/lecturer/sessions/${sessionId}/auto-refresh-qr`)
+                    .then(res => res.json())
+                    .then(data => {
+                        isRefreshing = false;
+                        if (data && data.active && data.qrImage) {
+                            const qrImg = document.getElementById('qrImage');
+                            const projQrImg = document.getElementById('projectorQrImage');
+                            if (qrImg) qrImg.src = data.qrImage;
+                            if (projQrImg) projQrImg.src = data.qrImage;
+
+                            remainingSeconds = data.remainingSeconds || 120;
+
+                            if (qrActiveContainer) qrActiveContainer.style.display = 'block';
+                            if (qrExpiredContainer) qrExpiredContainer.style.display = 'none';
+                            if (qrImageWrapper) qrImageWrapper.style.opacity = '1';
+
+                            if (timerProgressBar) {
+                                timerProgressBar.className = 'progress-bar bg-success';
+                                timerProgressBar.style.width = '100%';
+                            }
+                        } else if (data && !data.active) {
+                            if (timerBadge) {
+                                timerBadge.className = 'timer-badge';
+                                timerBadge.style.backgroundColor = '#fee2e2';
+                                timerBadge.style.color = '#dc2626';
+                                timerBadge.innerHTML = '<i class="bi bi-stop-circle"></i> <span>Session Ended</span>';
+                            }
+                            if (qrActiveContainer) qrActiveContainer.style.display = 'none';
+                            if (qrExpiredContainer) qrExpiredContainer.style.display = 'block';
+                        }
+                    })
+                    .catch(err => {
+                        isRefreshing = false;
+                        console.error("Error auto-refreshing QR:", err);
+                    });
+            };
+
+            // If remaining seconds is already 0 on page load but session is active, refresh immediately
+            if (remainingSeconds <= 0) {
+                refreshQrAutomatically();
+            }
+
+            const timerInterval = setInterval(() => {
+                remainingSeconds--;
+
+                if (remainingSeconds <= 0) {
+                    refreshQrAutomatically();
+                } else {
+                    const formatted = formatTime(remainingSeconds);
+                    const timerCd = document.getElementById('timerCountdown');
+                    if (timerCd) timerCd.textContent = formatted;
+                    if (projectorCountdown) projectorCountdown.innerHTML = `<i class="bi bi-stopwatch me-2"></i>Expires in: ${formatted}`;
+                    if (timerProgressBar) {
+                        const pct = (remainingSeconds / maxTime) * 100;
+                        timerProgressBar.style.width = pct + '%';
+                        if (pct < 25) {
+                            timerProgressBar.className = 'progress-bar bg-danger';
+                        } else if (pct < 50) {
+                            timerProgressBar.className = 'progress-bar bg-warning';
+                        } else {
+                            timerProgressBar.className = 'progress-bar bg-success';
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        // Live Attendance Polling (every 3 seconds)
+        if (isSessionActive) {
+            setInterval(() => {
+                fetch(`/lecturer/sessions/${sessionId}/attendance-data`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.attendees) {
+                            // Update attendee count
+                            const countBadge = document.getElementById('liveAttendanceCount');
+                            if (countBadge) countBadge.textContent = `${data.count} / ${totalEnrolled} Present`;
+
+                            const projCount = document.getElementById('projectorLiveCount');
+                            if (projCount) projCount.textContent = `${data.count} Students Marked`;
+
+                            // Rebuild table
+                            const tbody = document.getElementById('attendanceTableBody');
+                            if (data.attendees.length > 0) {
+                                let html = '';
+                                data.attendees.forEach((att, idx) => {
+                                    html += `
+                                    <tr>
+                                        <td class="text-muted small">${idx + 1}</td>
+                                        <td><span class="badge bg-light text-dark border fw-bold">${att.studentIdNumber}</span></td>
+                                        <td class="fw-semibold text-dark">${att.fullName}</td>
+                                        <td class="small text-muted">${att.department}</td>
+                                        <td class="small fw-semibold text-dark">${att.markedAt}</td>
+                                        <td><span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check2"></i> PRESENT</span></td>
+                                    </tr>
+                                `;
+                                });
+                                tbody.innerHTML = html;
+                            }
+                        }
+                    })
+                    .catch(err => console.error("Polling error:", err));
+            }, 3000);
+        }
+    </script>
+
+</body>
+
+</html>

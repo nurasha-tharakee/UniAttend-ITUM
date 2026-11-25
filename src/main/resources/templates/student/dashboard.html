@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Student Dashboard')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+
+        <main class="page-container">
+            <!-- Header with Quick Scan Button -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        Welcome, <span class="text-primary" th:text="${student.fullName}">Alex Morgan</span>
+                        <span class="badge ms-2 fs-6 align-middle"
+                              th:classappend="${student.registrationStatus.name() == 'APPROVED'} ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-dark'"
+                              th:text="${student.registrationStatus.displayName}">Approved</span>
+                    </h3>
+                    <p class="text-muted small mb-0">
+                        Student ID: <strong th:text="${student.studentIdNumber}">STU-2024-001</strong> &bull;
+                        Discipline: <strong th:text="${student.department}">Discipline</strong> &bull;
+                        Batch: <span th:text="${student.batchIntake != null and !student.batchIntake.isEmpty() ? student.batchIntake : 'N/A'}">Batch</span> &bull;
+                        Year: <span th:text="${student.academicYear}">Year</span> &bull;
+                        Semester: <span th:text="${student.semester != null and !student.semester.isEmpty() ? student.semester : 'N/A'}">Semester</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/student/profile}" class="btn btn-outline-secondary rounded-pill px-3 py-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-circle"></i> My Profile
+                    </a>
+                    <a th:href="@{/student/scan}" class="btn btn-primary rounded-pill px-4 py-2 shadow d-flex align-items-center gap-2">
+                        <i class="bi bi-camera-fill fs-5"></i>
+                        <span class="fw-bold">Scan Class QR Code</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <!-- Overall Attendance Card with Gauge -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" th:classappend="${stats.statusBadge == 'success'} ? 'success' : (${stats.statusBadge == 'warning'} ? 'warning' : 'danger')">
+                            <i class="bi bi-pie-chart-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Overall Attendance</div>
+                            <h2 class="stat-value" th:text="${stats.overallPercentage} + '%'">100%</h2>
+                            <small class="badge" th:classappend="'bg-' + ${stats.statusBadge} + '-subtle text-' + ${stats.statusBadge} + ' border border-' + ${stats.statusBadge} + '-subtle'"
+                                   th:text="${stats.overallPercentage >= 80} ? 'Excellent' : (${stats.overallPercentage >= 75} ? 'Satisfactory' : 'Needs Attention')">Good</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Classes Conducted -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon primary">
+                            <i class="bi bi-calendar3"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Total Conducted</div>
+                            <h2 class="stat-value" th:text="${stats.totalConducted}">0</h2>
+                            <small class="text-muted">Eligible Sessions</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Present Classes -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Attended (Present)</div>
+                            <h2 class="stat-value text-success" th:text="${stats.presentCount}">0</h2>
+                            <small class="text-muted">Verified Marks</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Absent Classes -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-title">Absent Classes</div>
+                            <h2 class="stat-value text-danger" th:text="${stats.absentCount}">0</h2>
+                            <small class="text-muted">Missed Classes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Absence & Medical Requests Summary Banner -->
+            <div class="card mb-4 border-0 shadow-sm" style="border-left: 4px solid var(--accent-blue) !important;">
+                <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon primary" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                            <i class="bi bi-file-earmark-medical"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Medical & Absence Requests</h6>
+                            <span class="text-muted small">
+                                <span class="badge bg-warning text-dark me-1" th:text="${pendingRequestsCount} + ' Pending'">0 Pending</span>
+                                <span th:text="${totalRequestsCount} + ' total submissions recorded'">0 total submissions</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/student/absence-requests}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                            <i class="bi bi-list-ul me-1"></i> View Requests
+                        </a>
+                        <a th:href="@{/student/absence-requests/new}" class="btn btn-primary btn-sm rounded-pill px-3">
+                            <i class="bi bi-plus-circle me-1"></i> Submit Absence
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Charts Row -->
+            <div class="row g-4 mb-4">
+                <!-- Bar Chart: Subject-wise Attendance -->
+                <div class="col-lg-8">
+                    <div class="card h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Subject-Wise Attendance Comparison (%)</span>
+                            <span class="badge bg-light text-muted border">Minimum Requirement: 75%</span>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="subjectBarChart" style="max-height: 260px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Donut Chart: Present vs Absent -->
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-white">
+                            <span class="fw-bold"><i class="bi bi-pie-chart me-2 text-info"></i>Attendance Ratio</span>
+                        </div>
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                            <div style="width: 190px; height: 190px;">
+                                <canvas id="ratioDonutChart"></canvas>
+                            </div>
+                            <div class="mt-3 text-center small text-muted">
+                                Overall Attendance: <strong class="text-dark" th:text="${stats.overallPercentage} + '%'">100%</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject-Wise Attendance Breakdown Table -->
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-mortarboard-fill me-2 text-primary"></i>Subject-Wise Attendance Breakdown</span>
+                    <span class="text-muted small">Formula: (Present / Total Conducted) &times; 100</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Subject Code &amp; Name</th>
+                                    <th>Lecturer</th>
+                                    <th class="text-center">Total Conducted</th>
+                                    <th class="text-center text-success">Attended</th>
+                                    <th class="text-center text-danger">Absent</th>
+                                    <th style="min-width: 180px;">Attendance %</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="subStat : ${stats.subjectStats}">
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" th:text="${subStat.subjectCode}">CS101</span>
+                                        <span class="fw-semibold text-dark" th:text="${subStat.subjectName}">Subject Name</span>
+                                    </td>
+                                    <td class="small text-muted" th:text="${subStat.lecturerName}">Lecturer Name</td>
+                                    <td class="text-center fw-semibold" th:text="${subStat.totalConducted}">0</td>
+                                    <td class="text-center fw-bold text-success" th:text="${subStat.presentCount}">0</td>
+                                    <td class="text-center fw-bold text-danger" th:text="${subStat.absentCount}">0</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar" th:classappend="'bg-' + ${subStat.statusBadge}"
+                                                     role="progressbar" th:style="'width: ' + ${subStat.percentage} + '%;'"></div>
+                                            </div>
+                                            <span class="small fw-bold" th:text="${subStat.percentage} + '%'">0%</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge" th:classappend="'bg-' + ${subStat.statusBadge} + '-subtle text-' + ${subStat.statusBadge} + ' border border-' + ${subStat.statusBadge} + '-subtle'"
+                                              th:text="${subStat.percentage >= 80} ? 'Eligible' : (${subStat.percentage >= 75} ? 'Warning' : 'Low Attendance')">Eligible</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(stats.subjectStats)}">
+                                    <td colspan="7" class="text-center py-4 text-muted">You are not enrolled in any subjects yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Attendance Activity -->
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-clock-history me-2 text-success"></i>Recent Verified Attendance</span>
+                    <a th:href="@{/student/history}" class="small text-decoration-none">View Full History</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Session Name / Topic</th>
+                                    <th>Class Date</th>
+                                    <th>Marked Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="att : ${recentAttendance}">
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" th:text="${att.session.subject.code}">CS101</span>
+                                        <span class="small fw-semibold ms-1" th:text="${att.session.subject.name}">Algorithms</span>
+                                    </td>
+                                    <td th:text="${att.session.sessionName}">Lecture 1</td>
+                                    <td class="small" th:text="${att.session.sessionDate}">2024-05-10</td>
+                                    <td class="small fw-semibold text-dark" th:text="${#temporals.format(att.markedAt, 'hh:mm:ss a, dd MMM')}">10:05 AM</td>
+                                    <td>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check2"></i> PRESENT
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(recentAttendance)}">
+                                    <td colspan="5" class="text-center py-4 text-muted">No attendance marked yet. Use "Scan Class QR Code" to mark your attendance.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+
+<!-- Chart.js Script -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const presentCount = /*[[${stats.presentCount}]]*/ 0;
+    const absentCount = /*[[${stats.absentCount}]]*/ 0;
+    const subjectStats = /*[[${stats.subjectStats}]]*/ [];
+    /*]]>*/
+
+    // 1. Donut Chart (Present vs Absent)
+    const donutCtx = document.getElementById('ratioDonutChart');
+    if (donutCtx) {
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Absent'],
+                datasets: [{
+                    data: [presentCount, absentCount],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    // 2. Bar Chart (Subject Percentages)
+    const barCtx = document.getElementById('subjectBarChart');
+    if (barCtx && subjectStats.length > 0) {
+        const labels = subjectStats.map(s => s.subjectCode);
+        const percentages = subjectStats.map(s => s.percentage);
+        const colors = percentages.map(p => p >= 80 ? '#10b981' : (p >= 75 ? '#f59e0b' : '#ef4444'));
+
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Attendance %',
+                    data: percentages,
+                    backgroundColor: colors,
+                    borderRadius: 6,
+                    maxBarThickness: 45
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: val => val + '%'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

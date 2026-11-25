@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: header('Student Verification Requests')}"></head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{fragments/layout :: sidebar('verifications')}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/layout :: navbar}"></div>
+        <main class="page-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Student Verification &amp; Approval Requests</h3>
+                    <p class="text-muted small mb-0">Review self-registered NDT students, verify identities against authorized records, and approve or reject accounts</p>
+                </div>
+            </div>
+
+            <!-- Import Authorized Student CSV -->
+            <div class="card mb-4">
+                <div class="card-header fw-bold"><i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>Import Authorized University Student List (CSV)</div>
+                <div class="card-body">
+                    <form th:action="@{/admin/students/import-authorized}" method="post" enctype="multipart/form-data" class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">CSV Format: <code>studentIdNumber,fullName,institutionalEmail,discipline,batchIntake,programme,academicStatus</code></label>
+                            <input type="file" name="csvFile" accept=".csv,text/csv" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                                <i class="bi bi-upload me-1"></i> Upload &amp; Import CSV
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pending / Rejected Registrations -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-person-check me-2 text-warning"></i>Registration Queue</span>
+                    <span class="badge bg-warning text-dark" th:text="${pendingStudents.size()} + ' Records'">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Student ID &amp; Name</th>
+                                <th>Discipline &amp; Batch</th>
+                                <th>Verification Checks</th>
+                                <th>Status</th>
+                                <th class="text-end">Admin Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="s : ${pendingStudents}">
+                                <td>
+                                    <div class="fw-bold text-primary" th:text="${s.studentIdNumber}">ID</div>
+                                    <div class="fw-semibold text-dark" th:text="${s.fullName}">Name</div>
+                                    <small class="text-muted" th:text="${s.email}">Email</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold" th:text="${s.department}">Discipline</div>
+                                    <small class="text-muted" th:text="${s.batchIntake} + ' • ' + ${s.semester}">Batch</small>
+                                </td>
+                                <td class="small">
+                                    <div>
+                                        <span class="badge" th:classappend="${s.identityVerified} ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-dark'"
+                                              th:text="${s.identityVerified} ? 'Authorized List: Matched' : 'Authorized List: Manual Review'">Check</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <span class="badge" th:classappend="${s.emailVerified} ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-muted'"
+                                              th:text="${s.emailVerified} ? 'Email: Verified' : 'Email: Unverified'">Email</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${s.registrationStatus.name() == 'PENDING_APPROVAL'} ? 'bg-info-subtle text-info' : (${s.registrationStatus.name() == 'REJECTED'} ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-dark')"
+                                          th:text="${s.registrationStatus.displayName}">Status</span>
+                                    <div class="small text-danger mt-1" th:if="${s.rejectionReason != null}" th:text="${s.rejectionReason}"></div>
+                                </td>
+                                <td class="text-end">
+                                    <form th:action="@{/admin/student-verifications/{id}/approve(id=${s.id})}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
+                                            <i class="bi bi-check-lg me-1"></i> Approve
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-1"
+                                            data-bs-toggle="modal" th:data-bs-target="'#rejectModal-' + ${s.id}">
+                                        <i class="bi bi-x-lg me-1"></i> Reject
+                                    </button>
+
+                                    <div class="modal fade text-start" th:id="'rejectModal-' + ${s.id}" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <form th:action="@{/admin/student-verifications/{id}/reject(id=${s.id})}" method="post">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h6 class="modal-title fw-bold">Reject Registration</h6>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <label class="form-label small fw-semibold">Rejection Reason</label>
+                                                        <textarea name="rejectionReason" class="form-control" rows="3" required placeholder="Explain why this registration is rejected..."></textarea>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-danger">Confirm Reject</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(pendingStudents)}">
+                                <td colspan="5" class="text-center py-4 text-muted">No pending or rejected registration requests.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Imported Authorized Records -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-database-check me-2 text-success"></i>Authorized Student Database Records</span>
+                    <span class="badge bg-success-subtle text-success" th:text="${authorizedRecords.size()} + ' Authorized'">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Full Name</th>
+                                <th>Institutional Email</th>
+                                <th>Discipline</th>
+                                <th>Batch</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="rec : ${authorizedRecords}">
+                                <td class="fw-semibold" th:text="${rec.studentIdNumber}">ID</td>
+                                <td th:text="${rec.fullName}">Name</td>
+                                <td th:text="${rec.institutionalEmail}">Email</td>
+                                <td th:text="${rec.discipline}">Discipline</td>
+                                <td th:text="${rec.batchIntake}">Batch</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${rec.academicStatus}">ACTIVE</span>
+                                    <span th:if="${rec.demonstrationRecord}" class="badge bg-warning-subtle text-dark ms-1">Demo</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(authorizedRecords)}">
+                                <td colspan="6" class="text-center py-4 text-muted">No authorized student records imported yet. Upload a CSV above.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>
